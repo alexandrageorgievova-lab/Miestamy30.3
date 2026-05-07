@@ -1,41 +1,38 @@
+using Miestamy30._3.Data;
+using Miestamy30._3.Repositories;
+using Miestamy30._3.Repositories.Interfaces;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+
+builder.Services.AddSingleton<DbConnectionFactory>();
+builder.Services.AddScoped<IKategoriaRepository, KategoriaRepository>();
+builder.Services.AddScoped<IFilterRepository, FilterRepository>();
+builder.Services.AddScoped<IMiestoRepository, MiestoRepository>();
+builder.Services.AddScoped<ITypPodujatiaRepository, TypPodujatiaRepository>();
+builder.Services.AddScoped<IEventFilterRepository, EventFilterRepository>();
+builder.Services.AddScoped<IPodujatieRepository, PodujatieRepository>();
+builder.Services.AddScoped<DatabaseInitializer>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Initialize database and seed on startup
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();
+    await initializer.InitializeAsync();
+}
+
 if (app.Environment.IsDevelopment())
-{
     app.MapOpenApi();
-}
 
-app.UseHttpsRedirection();
+app.UseDefaultFiles();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-    {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast");
-
+var contentTypes = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+contentTypes.Mappings[".woff2"] = "font/woff2";
+contentTypes.Mappings[".woff"]  = "font/woff";
+app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = contentTypes });
+app.MapControllers();
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
