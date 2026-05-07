@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>miestamy</title>
+  <style>
+    @font-face {
+      font-family: 'MMFont';
+      src: url('/fonts/MMFont.woff2') format('woff2');
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:   #202978;
+      --orange: #FF4B00;
+      --salmon: #F57E65;
+      --periwinkle: #C1CAED;
+      --white:  #ffffff;
+    }
+
+    html, body { height: 100%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: var(--navy); color: var(--white); overflow: hidden; }
+
+    /* ── Header ─────────────────────────────────────────────────────────── */
+    header {
+      height: 60px;
+      background: var(--navy);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 26px;
+      position: relative;
+      z-index: 1000;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .logo-dots { display: flex; align-items: center; gap: 5px; }
+    .logo-dot-lg { width: 18px; height: 18px; background: var(--orange); border-radius: 50%; }
+    .logo-dot-sm { width: 11px; height: 11px; background: var(--orange); border-radius: 50%; }
+    .logo-text { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 26px; color: var(--orange); letter-spacing: -0.5px; line-height: 1; }
+
+    nav { display: flex; align-items: center; gap: 10px; }
+    nav a {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 17px;
+      color: var(--orange);
+      text-decoration: none;
+      cursor: pointer;
+      padding-bottom: 3px;
+      border-bottom: 2.5px solid transparent;
+      transition: opacity 0.15s, border-color 0.15s;
+    }
+    nav a.active { border-bottom-color: var(--orange); }
+    nav a:not(.active) { opacity: 0.45; }
+    nav .sep { color: var(--orange); opacity: 0.4; font-size: 17px; }
+
+    /* ── Layout ─────────────────────────────────────────────────────────── */
+    main { display: flex; height: calc(100vh - 60px); }
+
+    /* ── Map ─────────────────────────────────────────────────────────────── */
+    #map { flex: 1; min-width: 0; background: var(--periwinkle); }
+    .leaflet-tile-pane { filter: hue-rotate(205deg) saturate(0.6) brightness(0.97); }
+    .leaflet-control-attribution { font-size: 9px; opacity: 0.35; }
+    .leaflet-control-zoom a { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important; }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────────── */
+    #sidebar {
+      width: 340px;
+      flex-shrink: 0;
+      background: var(--salmon);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Panels ──────────────────────────────────────────────────────────── */
+    .panel { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+    .panel.visible { display: flex; }
+
+    /* ── Cat header ──────────────────────────────────────────────────────── */
+    #cat-header {
+      padding: 16px 22px 12px;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 11px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--navy);
+      opacity: 0.5;
+      border-bottom: 1.5px solid rgba(32,41,120,0.12);
+    }
+    #cat-list { flex: 1; overflow-y: auto; }
+    #cat-list::-webkit-scrollbar { width: 4px; }
+    #cat-list::-webkit-scrollbar-thumb { background: rgba(32,41,120,0.2); border-radius: 2px; }
+
+    .cat-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 22px;
+      cursor: pointer;
+      border-bottom: 1.5px solid rgba(32,41,120,0.08);
+      transition: background 0.15s;
+    }
+    .cat-item:hover  { background: rgba(32,41,120,0.07); }
+    .cat-item.active { background: rgba(32,41,120,0.12); }
+    .cat-name {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 21px;
+      color: var(--navy);
+    }
+    .cat-icon-wrap {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--navy);
+      flex-shrink: 0;
+    }
+    .cat-icon-wrap svg { width: 30px; height: 30px; }
+
+    /* ── Filter / list panel ─────────────────────────────────────────────── */
+    .panel-back {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 22px;
+      cursor: pointer;
+      border-bottom: 1.5px solid rgba(32,41,120,0.1);
+      color: rgba(32,41,120,0.55);
+      font-size: 13px;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .panel-back:hover { color: var(--navy); }
+    .panel-back-arrow { font-size: 16px; }
+
+    .panel-title {
+      padding: 16px 22px 8px;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 28px;
+      color: var(--navy);
+      line-height: 1.1;
+    }
+    .filter-count { padding: 0 22px 10px; font-size: 12px; color: rgba(32,41,120,0.5); font-weight: 500; }
+
+    #filter-chips { padding: 0 18px 12px; display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip {
+      padding: 5px 13px;
+      border-radius: 20px;
+      border: 2px solid rgba(32,41,120,0.28);
+      color: rgba(32,41,120,0.7);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .chip:hover  { border-color: var(--navy); color: var(--navy); }
+    .chip.active { background: var(--navy); border-color: var(--navy); color: var(--white); }
+
+    #place-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+    #place-list::-webkit-scrollbar { width: 4px; }
+    #place-list::-webkit-scrollbar-thumb { background: rgba(32,41,120,0.2); border-radius: 2px; }
+
+    .place-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 22px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(32,41,120,0.06);
+      transition: background 0.12s;
+    }
+    .place-row:hover  { background: rgba(32,41,120,0.06); }
+    .place-row.active { background: rgba(32,41,120,0.1); }
+    .place-num {
+      width: 28px; height: 28px;
+      background: transparent;
+      border: 2px solid var(--navy);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 12px;
+      color: var(--navy);
+      flex-shrink: 0;
+    }
+    .place-row-name { font-size: 14px; font-weight: 700; color: var(--navy); }
+    .place-row-sub  { font-size: 11px; color: rgba(32,41,120,0.5); margin-top: 1px; }
+
+    /* ── Detail side panel ───────────────────────────────────────────────── */
+    #detail-panel {
+      width: 0;
+      flex-shrink: 0;
+      overflow: hidden;
+      transition: width 0.32s cubic-bezier(0.4,0,0.2,1);
+      background: rgba(245,126,101,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      border-left: 1.5px solid rgba(255,255,255,0.15);
+    }
+    #detail-panel.open { width: 320px; }
+
+    .detail-inner {
+      width: 320px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .detail-close {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      cursor: pointer;
+      border-bottom: 1.5px solid rgba(32,41,120,0.12);
+      color: rgba(32,41,120,0.6);
+      font-size: 16px;
+      font-weight: 500;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+    .detail-close:hover { color: var(--navy); }
+
+    .detail-img {
+      height: 160px;
+      background: var(--navy);
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-end;
+      padding: 14px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .detail-img::before {
+      content: '';
+      position: absolute;
+      inset: 14px;
+      border: 2px dashed rgba(255,255,255,0.2);
+      border-radius: 6px;
+    }
+    .detail-img-label {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.8px;
+      color: rgba(255,255,255,0.7);
+      background: rgba(0,0,0,0.3);
+      padding: 3px 9px;
+      border-radius: 4px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .detail-body { flex: 1; overflow-y: auto; padding: 18px 20px; }
+    .detail-body::-webkit-scrollbar { width: 4px; }
+    .detail-body::-webkit-scrollbar-thumb { background: rgba(32,41,120,0.2); border-radius: 2px; }
+
+    .detail-name { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 26px; color: var(--navy); line-height: 1.15; margin-bottom: 6px; }
+    .detail-addr { font-size: 13px; color: rgba(32,41,120,0.6); margin-bottom: 14px; font-weight: 500; }
+    .detail-dates { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 14px; }
+    .detail-cats  { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+
+    .cat-badge {
+      padding: 4px 11px;
+      background: rgba(32,41,120,0.12);
+      border: 1.5px solid rgba(32,41,120,0.28);
+      border-radius: 12px;
+      font-size: 11px; font-weight: 700; color: var(--navy);
+    }
+    .event-badge {
+      padding: 4px 11px;
+      background: var(--navy);
+      border-radius: 12px;
+      font-size: 11px; font-weight: 700; color: var(--salmon);
+    }
+
+    .detail-section-title {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 10px; letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: rgba(32,41,120,0.45);
+      margin-bottom: 8px; margin-top: 16px;
+    }
+    .detail-filter-group  { margin-bottom: 10px; }
+    .detail-filter-kat    { font-size: 10px; font-weight: 700; color: rgba(32,41,120,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+    .detail-filter-chips  { display: flex; flex-wrap: wrap; gap: 5px; }
+    .detail-chip {
+      padding: 3px 10px;
+      background: rgba(32,41,120,0.1);
+      border-radius: 10px;
+      font-size: 11px; font-weight: 500;
+      color: rgba(32,41,120,0.8);
+    }
+
+    /* ── Map markers ─────────────────────────────────────────────────────── */
+    .map-pin {
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .map-pin svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+    .map-pin.selected svg { filter: drop-shadow(0 0 0 3px #FF4B00) drop-shadow(0 2px 6px rgba(0,0,0,0.35)); }
+
+    /* ── Loading ─────────────────────────────────────────────────────────── */
+    .loading {
+      display: flex; align-items: center; justify-content: center;
+      padding: 32px 20px; color: rgba(32,41,120,0.4); font-size: 13px;
+    }
+
+    /* ── Mobile ──────────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      main { flex-direction: column; }
+      #map { height: 55vh; }
+      #sidebar { width: 100%; height: 45vh; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dots">
+      <div class="logo-dot-lg"></div>
+      <div class="logo-dot-sm"></div>
+    </div>
+    <span class="logo-text">miestamy</span>
+  </div>
+  <nav>
+    <a id="nav-miesta" class="active">Miesta</a>
+    <span class="sep">/</span>
+    <a id="nav-podujatia">Podujatia</a>
+  </nav>
+</header>
+
+<main>
+  <div id="map"></div>
+
+  <!-- DETAIL SIDE PANEL — slides in between map and sidebar -->
+  <div id="detail-panel">
+    <div class="detail-inner">
+      <div class="detail-close" id="detail-close-btn">
+        <span>←</span>
+        <span id="detail-back-label">Späť</span>
+      </div>
+      <div class="detail-img">
+        <span class="detail-img-label" id="detail-label">miestamy</span>
+      </div>
+      <div class="detail-body" id="detail-body"></div>
+    </div>
+  </div>
+
+  <aside id="sidebar">
+
+    <!-- CAT VIEW -->
+    <div id="cat-view" class="panel visible">
+      <div id="cat-header">Kategórie</div>
+      <div id="cat-list"><div class="loading">Načítavam…</div></div>
+    </div>
+
+    <!-- FILTER + LIST VIEW -->
+    <div id="filter-panel" class="panel">
+      <div class="panel-back" onclick="goBack()">
+        <span class="panel-back-arrow">←</span>
+        <span id="back-label">Všetky kategórie</span>
+      </div>
+      <div class="panel-title" id="panel-title"></div>
+      <div id="filter-chips"></div>
+      <div class="filter-count" id="filter-count"></div>
+      <div id="place-list"></div>
+    </div>
+
+  </aside>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.min.js"></script>
+<script>
+const API = '/api';
+
+// ── SVG icons ──────────────────────────────────────────────────────────────
+// Each returns an SVG string. color param = fill/stroke color.
+const ICONS = {
+  // ── Miesta kategórie ──────────────────────────────────────────────
+  'Kaviarne': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 27h12M10 27V19h12v8"/>
+    <path d="M11 19V14a5 5 0 0110 0v5"/>
+    <path d="M21 16.5l2.5.5a1.5 1.5 0 010 3L21 20.5"/>
+    <path d="M13.5 8c-.5 1-.5 2 .5 3M17 7c-.5 1-.5 2 .5 3"/>
+  </svg>`,
+
+  'Drinks': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 12h14l-2 15H10L8 12z"/>
+    <path d="M22 15h3a2 2 0 010 5h-3"/>
+    <path d="M11 12c0-2 2-4 4-4s2 1 4 1 2-1 3-1"/>
+  </svg>`,
+
+  'Jedlo': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="11" y1="5" x2="11" y2="27"/>
+    <path d="M9 5v8a2 2 0 004 0V5"/>
+    <line x1="21" y1="5" x2="21" y2="27"/>
+    <path d="M21 14V5M19 5c0 4 4 4 4 7v2h-4"/>
+  </svg>`,
+
+  'Hudba': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 22V10l14-3v12"/>
+    <circle cx="9.5" cy="22" r="3.5"/>
+    <circle cx="23.5" cy="19" r="3.5"/>
+  </svg>`,
+
+  'Kultúra': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="5" y="13" width="22" height="14" rx="1"/>
+    <path d="M5 13l11-8 11 8"/>
+    <rect x="13" y="19" width="6" height="8"/>
+    <line x1="9" y1="19" x2="9" y2="27"/>
+    <line x1="23" y1="19" x2="23" y2="27"/>
+  </svg>`,
+
+  'Šport': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="16" cy="16" r="11"/>
+    <path d="M8.5 9.5l4 3-1.5 5h5l-1.5-5 4-3"/>
+    <path d="M16 27v-4M5 16h4M23 16h4"/>
+  </svg>`,
+
+  'Outdoor': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="16" y1="28" x2="16" y2="14"/>
+    <path d="M16 14C12 14 6 10 6 4c5 0 10 4 10 10z"/>
+    <path d="M16 20C19 20 24 16 26 10c-5 0-10 4-10 10z"/>
+    <path d="M13 28h6"/>
+  </svg>`,
+
+  'Fashion': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 6a3 3 0 013 3"/>
+    <path d="M16 6a3 3 0 00-3 3"/>
+    <path d="M7 9l9 7 9-7"/>
+    <path d="M7 9l-3 6h6v12h12V15h6l-3-6"/>
+  </svg>`,
+
+  'Craft': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 26l4-4 12-12 4 4L14 26l-4 1z"/>
+    <line x1="18" y1="10" x2="22" y2="14"/>
+    <path d="M24 6l2 2-2 2-2-2z"/>
+    <path d="M6 26l2-4"/>
+  </svg>`,
+
+  'Knihy': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 6h10a2 2 0 012 2v18a2 2 0 00-2-2H4z"/>
+    <path d="M28 6H18a2 2 0 00-2 2v18a2 2 0 012-2h10z"/>
+    <line x1="16" y1="8" x2="16" y2="26"/>
+  </svg>`,
+
+  // ── Podujatia typy ─────────────────────────────────────────────────
+  'Koncert': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 22V10l14-3v12"/>
+    <circle cx="9.5" cy="22" r="3.5"/>
+    <circle cx="23.5" cy="19" r="3.5"/>
+  </svg>`,
+
+  'Festival': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 26h20M8 26V15l8-10 8 10v11"/>
+    <line x1="13" y1="26" x2="13" y2="19"/>
+    <line x1="19" y1="26" x2="19" y2="19"/>
+    <rect x="13" y="19" width="6" height="7"/>
+    <path d="M4 15h24"/>
+  </svg>`,
+
+  'Výstava': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="5" y="5" width="22" height="17" rx="1.5"/>
+    <line x1="5" y1="27" x2="27" y2="27"/>
+    <line x1="12" y1="22" x2="12" y2="27"/>
+    <line x1="20" y1="22" x2="20" y2="27"/>
+    <circle cx="12" cy="13" r="3"/>
+    <path d="M18 16l4-5 5 6"/>
+  </svg>`,
+
+  'Workshop': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 26l4-4 12-12 4 4L14 26l-4 1z"/>
+    <line x1="18" y1="10" x2="22" y2="14"/>
+    <path d="M24 6l2 2-2 2-2-2z"/>
+    <path d="M6 26l2-4"/>
+  </svg>`,
+
+  'Divadelné predstavenie': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="13" r="5"/>
+    <circle cx="21" cy="13" r="5"/>
+    <path d="M8 16c1 2 3 3 5 2"/>
+    <path d="M18 12c1-2 3-3 5-2"/>
+    <path d="M6 26h20v-4H6z"/>
+  </svg>`,
+
+  'Filmové premietanie': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="7" width="18" height="14" rx="1.5"/>
+    <path d="M21 13l8-5v12l-8-5z"/>
+    <line x1="3" y1="12" x2="21" y2="12"/>
+    <line x1="3" y1="16" x2="21" y2="16"/>
+    <line x1="8" y1="7" x2="8" y2="21"/>
+    <line x1="14" y1="7" x2="14" y2="21"/>
+  </svg>`,
+
+  'Diskusia / Panel': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 6h16a2 2 0 012 2v9a2 2 0 01-2 2H8l-4 3V8a2 2 0 012-2z"/>
+    <path d="M22 10h6a2 2 0 012 2v7a2 2 0 01-2 2h-2l-3 2.5V12a2 2 0 01-1-2z"/>
+  </svg>`,
+
+  'Vernisáž': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="5" y="5" width="22" height="17" rx="1.5"/>
+    <line x1="5" y1="27" x2="27" y2="27"/>
+    <line x1="12" y1="22" x2="12" y2="27"/>
+    <line x1="20" y1="22" x2="20" y2="27"/>
+    <circle cx="12" cy="13" r="3"/>
+    <path d="M18 16l4-5 5 6"/>
+    <circle cx="24" cy="6" r="2.5" fill="${c}" stroke="none"/>
+  </svg>`,
+
+  'Trh / Market': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 10h24l-2 16H6L4 10z"/>
+    <path d="M4 10L7 5h18l3 5"/>
+    <line x1="12" y1="10" x2="12" y2="26"/>
+    <line x1="20" y1="10" x2="20" y2="26"/>
+    <line x1="6" y1="18" x2="26" y2="18"/>
+  </svg>`,
+
+  'Šport. podujatie': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="16" cy="16" r="11"/>
+    <path d="M8.5 9.5l4 3-1.5 5h5l-1.5-5 4-3"/>
+    <path d="M16 27v-4M5 16h4M23 16h4"/>
+  </svg>`,
+
+  'Párty / Rave': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 4l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z"/>
+    <line x1="7" y1="24" x2="10" y2="21"/>
+    <line x1="25" y1="24" x2="22" y2="21"/>
+    <line x1="16" y1="28" x2="16" y2="24"/>
+  </svg>`,
+
+  'Stand-up': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="16" cy="8" r="3.5"/>
+    <path d="M10 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
+    <path d="M12 28v-8l4-4 4 4v8"/>
+    <path d="M8 20h4M20 20h4"/>
+    <circle cx="22" cy="24" r="1.5" fill="${c}" stroke="none"/>
+  </svg>`,
+
+  'Otvorené dvere': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 27V6l14-2v23"/>
+    <path d="M6 27h20M20 27V4"/>
+    <circle cx="18" cy="16" r="1.5" fill="${c}" stroke="none"/>
+    <path d="M6 6H4M20 4h8v23h-8"/>
+  </svg>`,
+
+  'Plein air': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="16" y1="28" x2="16" y2="14"/>
+    <path d="M16 14C12 14 6 10 6 4c5 0 10 4 10 10z"/>
+    <path d="M16 20C19 20 24 16 26 10c-5 0-10 4-10 10z"/>
+    <line x1="8" y1="24" x2="24" y2="24"/>
+  </svg>`,
+
+  // fallback
+  '_place': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 4a8 8 0 018 8c0 6-8 16-8 16S8 18 8 12a8 8 0 018-8z"/>
+    <circle cx="16" cy="12" r="3"/>
+  </svg>`,
+
+  '_event': (c) => `<svg viewBox="0 0 32 32" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="5" y="8" width="22" height="20" rx="2"/>
+    <path d="M5 14h22"/>
+    <line x1="11" y1="5" x2="11" y2="11"/>
+    <line x1="21" y1="5" x2="21" y2="11"/>
+  </svg>`,
+};
+
+function getIcon(name, mode) {
+  if (ICONS[name]) return ICONS[name];
+  return mode === 'event' ? ICONS['_event'] : ICONS['_place'];
+}
+
+// ── State ───────────────────────────────────────────────────────────────────
+let map;
+let clusterGroup = null;
+let focusedMarker = null;   // single marker shown during detail view
+let mode = 'miesta';
+let currentMarkers = {};    // id → L.marker (kept off-map while in cluster group)
+let currentKat = null;
+let activeFiltre = new Set();
+let currentMiesta = [];
+let currentTyp = null;
+let activeEventFiltre = new Set();
+let currentPodujatia = [];
+
+// ── Map init ─────────────────────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map', { zoomControl: true }).setView([48.1486, 17.1077], 13);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://carto.com/">CARTO</a> © <a href="https://www.openstreetmap.org/">OSM</a>',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(map);
+}
+
+// ── Map marker factory ───────────────────────────────────────────────────────
+function makeMarkerIcon(iconName, type, selected = false) {
+  const iconFn = getIcon(iconName, type);
+  const color  = selected ? '#FF4B00' : '#202978';
+  const bg     = selected ? 'rgba(255,255,255,0.92)' : 'rgba(199,209,245,0.82)';
+  const border = selected ? '3px solid #FF4B00' : '2px solid rgba(32,41,120,0.18)';
+  const sz = selected ? 48 : 38;
+  const innerSz = selected ? 32 : 26;
+  const html = `
+    <div style="
+      width:${sz}px;height:${sz}px;
+      background:${bg};
+      border:${border};
+      border-radius:10px;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 3px 8px rgba(0,0,0,0.22);
+      cursor:pointer;
+    ">
+      <div style="width:${innerSz}px;height:${innerSz}px;color:${color}">
+        ${iconFn(color)}
+      </div>
+    </div>`;
+  return L.divIcon({
+    className: '',
+    html,
+    iconSize: [sz, sz],
+    iconAnchor: [sz / 2, sz / 2]
+  });
+}
+
+// ── API ──────────────────────────────────────────────────────────────────────
+async function get(path) {
+  const r = await fetch(API + path);
+  if (!r.ok) throw new Error(r.statusText);
+  return r.json();
+}
+
+// ── Marker helpers ───────────────────────────────────────────────────────────
+function makeClusterGroup() {
+  return L.markerClusterGroup({
+    maxClusterRadius: 60,
+    disableClusteringAtZoom: 17,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    iconCreateFunction(cluster) {
+      const count = cluster.getChildCount();
+      return L.divIcon({
+        className: '',
+        html: `<div style="
+          width:46px;height:46px;
+          background:#F57E65;
+          border:3px solid #202978;
+          border-radius:10px;
+          display:flex;align-items:center;justify-content:center;
+          box-shadow:0 3px 10px rgba(0,0,0,0.25);
+          font-family:'MMFont',sans-serif;
+          font-size:18px;
+          color:#202978;
+          line-height:1;
+        ">${count}</div>`,
+        iconSize: [46, 46],
+        iconAnchor: [23, 23]
+      });
+    }
+  });
+}
+
+function clearMarkers() {
+  if (focusedMarker) { map.removeLayer(focusedMarker); focusedMarker = null; }
+  if (clusterGroup)  { map.removeLayer(clusterGroup); clusterGroup = null; }
+  // fallback: direct markers
+  Object.values(currentMarkers).forEach(m => { try { map.removeLayer(m); } catch(_){} });
+  currentMarkers = {};
+}
+
+function buildMarkers(items, type, iconKeyFn, onClickFn) {
+  clearMarkers();
+
+  const useClusters = typeof L.markerClusterGroup === 'function';
+  if (useClusters) clusterGroup = makeClusterGroup();
+
+  items.filter(x => x.lat && x.lng).forEach(x => {
+    const iconName = iconKeyFn(x);
+    const marker = L.marker([x.lat, x.lng], { icon: makeMarkerIcon(iconName, type, false) })
+      .on('click', () => onClickFn(x.id));
+    marker._iconName = iconName;
+    marker._type = type;
+    currentMarkers[x.id] = marker;
+    if (useClusters) clusterGroup.addLayer(marker);
+    else             marker.addTo(map);
+  });
+
+  if (useClusters) map.addLayer(clusterGroup);
+}
+
+function fitMarkers() {
+  if (clusterGroup && Object.keys(currentMarkers).length) {
+    const pts = Object.values(currentMarkers).map(m => m.getLatLng());
+    map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 16 });
+  }
+}
+
+function focusMarker(id) {
+  // Hide cluster group, show only the selected marker directly on map
+  if (clusterGroup) map.removeLayer(clusterGroup);
+  if (focusedMarker) { map.removeLayer(focusedMarker); focusedMarker = null; }
+
+  const m = currentMarkers[id];
+  if (!m) return;
+  focusedMarker = L.marker(m.getLatLng(), {
+    icon: makeMarkerIcon(m._iconName, m._type, true)
+  }).addTo(map);
+  map.setView(m.getLatLng(), 16, { animate: true });
+}
+
+function restoreMarkers() {
+  if (focusedMarker) { map.removeLayer(focusedMarker); focusedMarker = null; }
+  if (clusterGroup) {
+    map.addLayer(clusterGroup);
+  } else {
+    Object.values(currentMarkers).forEach(m => {
+      m.setIcon(makeMarkerIcon(m._iconName, m._type, false));
+      m.addTo(map);
+    });
+  }
+  fitMarkers();
+}
+
+// ── Detail panel open/close ──────────────────────────────────────────────────
+function openDetailPanel() {
+  document.getElementById('detail-panel').classList.add('open');
+}
+function closeDetailPanel() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.querySelectorAll('.place-row').forEach(el => el.classList.remove('active'));
+  restoreMarkers();
+}
+
+// ── Mode switch ──────────────────────────────────────────────────────────────
+function setMode(newMode) {
+  if (mode === newMode) return;
+  mode = newMode;
+  document.getElementById('nav-miesta').classList.toggle('active', mode === 'miesta');
+  document.getElementById('nav-podujatia').classList.toggle('active', mode === 'podujatia');
+
+  currentKat = null; activeFiltre.clear(); currentMiesta = [];
+  currentTyp = null; activeEventFiltre.clear(); currentPodujatia = [];
+  clearMarkers();
+  closeDetailPanel();
+
+  document.getElementById('cat-header').textContent =
+    mode === 'miesta' ? 'Kategórie' : 'Typy podujatí';
+  document.getElementById('back-label').textContent =
+    mode === 'miesta' ? 'Všetky kategórie' : 'Všetky typy';
+  document.getElementById('cat-list').innerHTML = '<div class="loading">Načítavam…</div>';
+
+  showView('cat');
+  if (mode === 'miesta') { loadKategorie(); loadAllMiesta(); }
+  else                    { loadTypy();      loadAllPodujatia(); }
+}
+
+// ── View switching (sidebar only) ────────────────────────────────────────────
+function showView(view) {
+  document.getElementById('cat-view').classList.toggle('visible', view === 'cat');
+  document.getElementById('filter-panel').classList.toggle('visible', view === 'filter');
+}
+
+// ── MIESTA mode ──────────────────────────────────────────────────────────────
+async function loadKategorie() {
+  const list = await get('/kategorie');
+  document.getElementById('cat-list').innerHTML = list.map(k => `
+    <div class="cat-item" data-id="${k.id}" data-nazov="${k.nazov}"
+         onclick="selectKategoria(${k.id},'${k.nazov}')">
+      <span class="cat-name">${k.nazov}</span>
+      <span class="cat-icon-wrap">${(ICONS[k.nazov] || ICONS['_place'])('#202978')}</span>
+    </div>`).join('');
+}
+
+async function loadAllMiesta() {
+  const miesta = await get('/miesta');
+  buildMarkers(miesta, 'place', x => x.nazov, showDetail);
+}
+
+async function selectKategoria(id, nazov) {
+  currentKat = { id, nazov };
+  activeFiltre.clear();
+  document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.cat-item[data-id="${id}"]`)?.classList.add('active');
+  document.getElementById('panel-title').textContent = nazov;
+  showView('filter');
+
+  const [miesta, filtre] = await Promise.all([
+    get(`/miesta/by-kategoria/${encodeURIComponent(nazov)}`),
+    get(`/filters/by-kategoria/${id}`)
+  ]);
+  currentMiesta = miesta;
+  renderChips(filtre, toggleFilter);
+  renderPlaceList(miesta);
+  buildMarkers(miesta, 'place', () => nazov, showDetail);
+  fitMarkers();
+}
+
+function renderChips(items, toggleFn) {
+  document.getElementById('filter-chips').innerHTML = items.map(f => `
+    <div class="chip" data-nazov="${f.nazov}" onclick="${toggleFn.name}('${esc(f.nazov)}')">${f.nazov}</div>`).join('');
+}
+
+function esc(s) { return s.replace(/'/g, "\\'"); }
+
+async function toggleFilter(nazov) {
+  activeFiltre.has(nazov) ? activeFiltre.delete(nazov) : activeFiltre.add(nazov);
+  document.querySelectorAll('.chip').forEach(c =>
+    c.classList.toggle('active', activeFiltre.has(c.dataset.nazov)));
+
+  if (!activeFiltre.size) {
+    renderPlaceList(currentMiesta);
+    buildMarkers(currentMiesta, 'place', () => currentKat.nazov, showDetail);
+    fitMarkers(); return;
+  }
+  const results = await Promise.all([...activeFiltre].map(f =>
+    get(`/miesta/by-filter/${encodeURIComponent(f)}`)));
+  const ids = results.map(arr => new Set(arr.map(m => m.id)));
+  const filtered = currentMiesta.filter(m => ids.every(s => s.has(m.id)));
+  renderPlaceList(filtered);
+  buildMarkers(filtered, 'place', () => currentKat.nazov, showDetail);
+  fitMarkers();
+}
+
+function renderPlaceList(items) {
+  document.getElementById('filter-count').textContent = `${items.length} miest`;
+  const el = document.getElementById('place-list');
+  if (!items.length) { el.innerHTML = '<div class="loading">Žiadne miesta</div>'; return; }
+  el.innerHTML = items.map((m, i) => `
+    <div class="place-row" data-id="${m.id}" onclick="showDetail(${m.id})">
+      <div class="place-num">${i + 1}</div>
+      <div>
+        <div class="place-row-name">${m.nazov}</div>
+        ${m.adresa ? `<div class="place-row-sub">${m.adresa}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+async function showDetail(id) {
+  document.querySelectorAll('.place-row').forEach(el =>
+    el.classList.toggle('active', parseInt(el.dataset.id) === id));
+  focusMarker(id);
+  const detail = await get(`/miesta/${id}/detail`);
+  document.getElementById('detail-label').textContent = detail.nazov;
+  document.getElementById('detail-back-label').textContent = currentKat ? currentKat.nazov : 'Späť';
+  const sections = Object.entries(detail.filtre || {}).map(([kat, filtre]) => `
+    <div class="detail-filter-group">
+      <div class="detail-filter-kat">${kat}</div>
+      <div class="detail-filter-chips">${filtre.map(f => `<span class="detail-chip">${f}</span>`).join('')}</div>
+    </div>`).join('');
+  document.getElementById('detail-body').innerHTML = `
+    <div class="detail-name">${detail.nazov}</div>
+    ${detail.adresa ? `<div class="detail-addr">📍 ${detail.adresa}</div>` : ''}
+    <div class="detail-cats">${(detail.kategorie || []).map(k => `<span class="cat-badge">${k}</span>`).join('')}</div>
+    ${sections ? `<div class="detail-section-title">Filtre</div>${sections}` : ''}`;
+  openDetailPanel();
+}
+
+function goBack() {
+  closeDetailPanel();
+  if (mode === 'miesta') {
+    currentKat = null; activeFiltre.clear();
+    document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
+    showView('cat'); loadAllMiesta();
+  } else {
+    currentTyp = null; activeEventFiltre.clear();
+    document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
+    showView('cat'); loadAllPodujatia();
+  }
+}
+
+// ── PODUJATIA mode ───────────────────────────────────────────────────────────
+async function loadTypy() {
+  const list = await get('/typypodujatia');
+  document.getElementById('cat-list').innerHTML = list.map(t => `
+    <div class="cat-item" data-id="${t.id}" data-nazov="${t.nazov}"
+         onclick="selectTyp(${t.id},'${esc(t.nazov)}')">
+      <span class="cat-name">${t.nazov}</span>
+      <span class="cat-icon-wrap">${(ICONS[t.nazov] || ICONS['_event'])('#202978')}</span>
+    </div>`).join('');
+}
+
+async function loadAllPodujatia() {
+  const podujatia = await get('/podujatia');
+  buildMarkers(podujatia, 'event', x => x.typNazov || '_event', showEventDetail);
+}
+
+async function selectTyp(id, nazov) {
+  currentTyp = { id, nazov };
+  activeEventFiltre.clear();
+  document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.cat-item[data-id="${id}"]`)?.classList.add('active');
+  document.getElementById('panel-title').textContent = nazov;
+  showView('filter');
+
+  const [podujatia, filtre] = await Promise.all([
+    get(`/podujatia/by-typ/${encodeURIComponent(nazov)}`),
+    get('/eventfilters')
+  ]);
+  currentPodujatia = podujatia;
+  renderEventChips(filtre);
+  renderEventList(podujatia);
+  buildMarkers(podujatia, 'event', () => nazov, showEventDetail);
+  fitMarkers();
+}
+
+function renderEventChips(filtre) {
+  document.getElementById('filter-chips').innerHTML = filtre.map(f => `
+    <div class="chip" data-nazov="${f.nazov}" onclick="toggleEventFilter('${esc(f.nazov)}')">${f.nazov}</div>`).join('');
+}
+
+async function toggleEventFilter(nazov) {
+  activeEventFiltre.has(nazov) ? activeEventFiltre.delete(nazov) : activeEventFiltre.add(nazov);
+  document.querySelectorAll('.chip').forEach(c =>
+    c.classList.toggle('active', activeEventFiltre.has(c.dataset.nazov)));
+
+  if (!activeEventFiltre.size) {
+    renderEventList(currentPodujatia);
+    buildMarkers(currentPodujatia, 'event', () => currentTyp.nazov, showEventDetail);
+    fitMarkers(); return;
+  }
+  const results = await Promise.all([...activeEventFiltre].map(f =>
+    get(`/podujatia/by-filter/${encodeURIComponent(f)}`)));
+  const ids = results.map(arr => new Set(arr.map(p => p.id)));
+  const filtered = currentPodujatia.filter(p => ids.every(s => s.has(p.id)));
+  renderEventList(filtered);
+  buildMarkers(filtered, 'event', () => currentTyp.nazov, showEventDetail);
+  fitMarkers();
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  return new Date(s).toLocaleDateString('sk-SK', { day: 'numeric', month: 'short' });
+}
+
+function renderEventList(items) {
+  document.getElementById('filter-count').textContent = `${items.length} podujatí`;
+  const el = document.getElementById('place-list');
+  if (!items.length) { el.innerHTML = '<div class="loading">Žiadne podujatia</div>'; return; }
+  el.innerHTML = items.map((p, i) => `
+    <div class="place-row" data-id="${p.id}" onclick="showEventDetail(${p.id})">
+      <div class="place-num">${i + 1}</div>
+      <div>
+        <div class="place-row-name">${p.nazov}</div>
+        <div class="place-row-sub">${fmtDate(p.datumOd)}${p.datumDo ? ' – ' + fmtDate(p.datumDo) : ''}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function showEventDetail(id) {
+  document.querySelectorAll('.place-row').forEach(el =>
+    el.classList.toggle('active', parseInt(el.dataset.id) === id));
+  focusMarker(id);
+  const detail = await get(`/podujatia/${id}/detail`);
+  document.getElementById('detail-label').textContent = detail.nazov;
+  document.getElementById('detail-back-label').textContent = currentTyp ? currentTyp.nazov : 'Späť';
+  const typy       = (detail.typy   || []).map(t => `<span class="event-badge">${t}</span>`).join('');
+  const filtrChips = (detail.filtre || []).map(f => `<span class="detail-chip">${f}</span>`).join('');
+  document.getElementById('detail-body').innerHTML = `
+    <div class="detail-name">${detail.nazov}</div>
+    <div class="detail-dates">📅 <span>${fmtDate(detail.datumOd)}</span>${detail.datumDo ? ` – <span>${fmtDate(detail.datumDo)}</span>` : ''}</div>
+    ${detail.adresa      ? `<div class="detail-addr">📍 ${detail.adresa}</div>` : ''}
+    ${detail.miestoNazov ? `<div class="detail-addr" style="margin-top:-10px">🏠 ${detail.miestoNazov}</div>` : ''}
+    ${typy       ? `<div class="detail-cats">${typy}</div>` : ''}
+    ${filtrChips ? `<div class="detail-section-title">Filtre</div><div class="detail-filter-chips" style="margin-bottom:8px">${filtrChips}</div>` : ''}
+    ${detail.popis ? `<div class="detail-section-title">O podujatí</div><p style="font-size:13px;color:rgba(32,41,120,0.75);line-height:1.6">${detail.popis}</p>` : ''}`;
+  openDetailPanel();
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+(async () => {
+  initMap();
+  document.getElementById('nav-miesta').addEventListener('click',    () => setMode('miesta'));
+  document.getElementById('nav-podujatia').addEventListener('click', () => setMode('podujatia'));
+  document.getElementById('detail-close-btn').addEventListener('click', closeDetailPanel);
+  showView('cat');
+  await Promise.all([loadKategorie(), loadAllMiesta()]);
+})();
+</script>
+</body>
+</html>
