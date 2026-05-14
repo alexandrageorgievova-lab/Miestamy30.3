@@ -13,91 +13,161 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await SeedEventsAsync();
     }
 
+    private bool IsPostgres()
+    {
+        using var conn = factory.Create();
+        return conn is Npgsql.NpgsqlConnection;
+    }
+
     private async Task CreateSchemaAsync()
     {
         using var conn = factory.Create();
-        await conn.ExecuteAsync(@"
-            PRAGMA foreign_keys = ON;
 
-            CREATE TABLE IF NOT EXISTS Kategoria (
-                Id    INTEGER PRIMARY KEY AUTOINCREMENT,
-                Nazov TEXT    NOT NULL UNIQUE
-            );
+        if (IsPostgres())
+        {
+            // PostgreSQL — execute each statement separately (no PRAGMA, use SERIAL)
+            var statements = new[]
+            {
+                @"CREATE TABLE IF NOT EXISTS Kategoria (
+                    Id    SERIAL PRIMARY KEY,
+                    Nazov TEXT   NOT NULL UNIQUE
+                )",
+                @"CREATE TABLE IF NOT EXISTS Filter (
+                    Id          SERIAL PRIMARY KEY,
+                    Nazov       TEXT    NOT NULL,
+                    KategoriaId INTEGER NOT NULL REFERENCES Kategoria(Id),
+                    UNIQUE (Nazov, KategoriaId)
+                )",
+                @"CREATE TABLE IF NOT EXISTS Miesto (
+                    Id     SERIAL PRIMARY KEY,
+                    Nazov  TEXT   NOT NULL UNIQUE,
+                    Adresa TEXT,
+                    Lat    DOUBLE PRECISION,
+                    Lng    DOUBLE PRECISION,
+                    Popis  TEXT,
+                    WebUrl TEXT
+                )",
+                @"CREATE TABLE IF NOT EXISTS MiestoKategoria (
+                    MiestoId    INTEGER NOT NULL REFERENCES Miesto(Id)    ON DELETE CASCADE,
+                    KategoriaId INTEGER NOT NULL REFERENCES Kategoria(Id),
+                    JeHlavna    BOOLEAN NOT NULL DEFAULT FALSE,
+                    PRIMARY KEY (MiestoId, KategoriaId)
+                )",
+                @"CREATE TABLE IF NOT EXISTS MiestoFilter (
+                    MiestoId INTEGER NOT NULL REFERENCES Miesto(Id)  ON DELETE CASCADE,
+                    FilterId INTEGER NOT NULL REFERENCES Filter(Id),
+                    PRIMARY KEY (MiestoId, FilterId)
+                )",
+                @"CREATE TABLE IF NOT EXISTS TypPodujatia (
+                    Id    SERIAL PRIMARY KEY,
+                    Nazov TEXT   NOT NULL UNIQUE
+                )",
+                @"CREATE TABLE IF NOT EXISTS EventFilter (
+                    Id    SERIAL PRIMARY KEY,
+                    Nazov TEXT   NOT NULL UNIQUE
+                )",
+                @"CREATE TABLE IF NOT EXISTS Podujatie (
+                    Id       SERIAL PRIMARY KEY,
+                    Nazov    TEXT NOT NULL,
+                    Popis    TEXT,
+                    DatumOd  TEXT NOT NULL,
+                    DatumDo  TEXT,
+                    Adresa   TEXT,
+                    Lat      DOUBLE PRECISION,
+                    Lng      DOUBLE PRECISION,
+                    MiestoId INTEGER REFERENCES Miesto(Id)
+                )",
+                @"CREATE TABLE IF NOT EXISTS PodujatieTyp (
+                    PodujatieId INTEGER NOT NULL REFERENCES Podujatie(Id)   ON DELETE CASCADE,
+                    TypId       INTEGER NOT NULL REFERENCES TypPodujatia(Id),
+                    PRIMARY KEY (PodujatieId, TypId)
+                )",
+                @"CREATE TABLE IF NOT EXISTS PodujatieFilter (
+                    PodujatieId INTEGER NOT NULL REFERENCES Podujatie(Id) ON DELETE CASCADE,
+                    FilterId    INTEGER NOT NULL REFERENCES EventFilter(Id),
+                    PRIMARY KEY (PodujatieId, FilterId)
+                )"
+            };
+            foreach (var sql in statements)
+                await conn.ExecuteAsync(sql);
+        }
+        else
+        {
+            // SQLite — original schema
+            await conn.ExecuteAsync(@"
+                PRAGMA foreign_keys = ON;
 
-            CREATE TABLE IF NOT EXISTS Filter (
-                Id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                Nazov       TEXT    NOT NULL,
-                KategoriaId INTEGER NOT NULL,
-                FOREIGN KEY (KategoriaId) REFERENCES Kategoria(Id),
-                UNIQUE (Nazov, KategoriaId)
-            );
-
-            CREATE TABLE IF NOT EXISTS Miesto (
-                Id     INTEGER PRIMARY KEY AUTOINCREMENT,
-                Nazov  TEXT    NOT NULL UNIQUE,
-                Adresa TEXT,
-                Lat    REAL,
-                Lng    REAL,
-                Popis  TEXT,
-                WebUrl TEXT
-            );
-
-            CREATE TABLE IF NOT EXISTS MiestoKategoria (
-                MiestoId    INTEGER NOT NULL,
-                KategoriaId INTEGER NOT NULL,
-                JeHlavna    INTEGER NOT NULL DEFAULT 0,
-                PRIMARY KEY (MiestoId, KategoriaId),
-                FOREIGN KEY (MiestoId)    REFERENCES Miesto(Id)    ON DELETE CASCADE,
-                FOREIGN KEY (KategoriaId) REFERENCES Kategoria(Id)
-            );
-
-            CREATE TABLE IF NOT EXISTS MiestoFilter (
-                MiestoId INTEGER NOT NULL,
-                FilterId INTEGER NOT NULL,
-                PRIMARY KEY (MiestoId, FilterId),
-                FOREIGN KEY (MiestoId) REFERENCES Miesto(Id)   ON DELETE CASCADE,
-                FOREIGN KEY (FilterId) REFERENCES Filter(Id)
-            );
-
-            CREATE TABLE IF NOT EXISTS TypPodujatia (
-                Id    INTEGER PRIMARY KEY AUTOINCREMENT,
-                Nazov TEXT    NOT NULL UNIQUE
-            );
-
-            CREATE TABLE IF NOT EXISTS EventFilter (
-                Id    INTEGER PRIMARY KEY AUTOINCREMENT,
-                Nazov TEXT    NOT NULL UNIQUE
-            );
-
-            CREATE TABLE IF NOT EXISTS Podujatie (
-                Id       INTEGER PRIMARY KEY AUTOINCREMENT,
-                Nazov    TEXT NOT NULL,
-                Popis    TEXT,
-                DatumOd  TEXT NOT NULL,
-                DatumDo  TEXT,
-                Adresa   TEXT,
-                Lat      REAL,
-                Lng      REAL,
-                MiestoId INTEGER,
-                FOREIGN KEY (MiestoId) REFERENCES Miesto(Id)
-            );
-
-            CREATE TABLE IF NOT EXISTS PodujatieTyp (
-                PodujatieId INTEGER NOT NULL,
-                TypId       INTEGER NOT NULL,
-                PRIMARY KEY (PodujatieId, TypId),
-                FOREIGN KEY (PodujatieId) REFERENCES Podujatie(Id) ON DELETE CASCADE,
-                FOREIGN KEY (TypId)       REFERENCES TypPodujatia(Id)
-            );
-
-            CREATE TABLE IF NOT EXISTS PodujatieFilter (
-                PodujatieId INTEGER NOT NULL,
-                FilterId    INTEGER NOT NULL,
-                PRIMARY KEY (PodujatieId, FilterId),
-                FOREIGN KEY (PodujatieId) REFERENCES Podujatie(Id) ON DELETE CASCADE,
-                FOREIGN KEY (FilterId)    REFERENCES EventFilter(Id)
-            );
-        ");
+                CREATE TABLE IF NOT EXISTS Kategoria (
+                    Id    INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Nazov TEXT    NOT NULL UNIQUE
+                );
+                CREATE TABLE IF NOT EXISTS Filter (
+                    Id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Nazov       TEXT    NOT NULL,
+                    KategoriaId INTEGER NOT NULL,
+                    FOREIGN KEY (KategoriaId) REFERENCES Kategoria(Id),
+                    UNIQUE (Nazov, KategoriaId)
+                );
+                CREATE TABLE IF NOT EXISTS Miesto (
+                    Id     INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Nazov  TEXT    NOT NULL UNIQUE,
+                    Adresa TEXT,
+                    Lat    REAL,
+                    Lng    REAL,
+                    Popis  TEXT,
+                    WebUrl TEXT
+                );
+                CREATE TABLE IF NOT EXISTS MiestoKategoria (
+                    MiestoId    INTEGER NOT NULL,
+                    KategoriaId INTEGER NOT NULL,
+                    JeHlavna    INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (MiestoId, KategoriaId),
+                    FOREIGN KEY (MiestoId)    REFERENCES Miesto(Id)    ON DELETE CASCADE,
+                    FOREIGN KEY (KategoriaId) REFERENCES Kategoria(Id)
+                );
+                CREATE TABLE IF NOT EXISTS MiestoFilter (
+                    MiestoId INTEGER NOT NULL,
+                    FilterId INTEGER NOT NULL,
+                    PRIMARY KEY (MiestoId, FilterId),
+                    FOREIGN KEY (MiestoId) REFERENCES Miesto(Id)   ON DELETE CASCADE,
+                    FOREIGN KEY (FilterId) REFERENCES Filter(Id)
+                );
+                CREATE TABLE IF NOT EXISTS TypPodujatia (
+                    Id    INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Nazov TEXT    NOT NULL UNIQUE
+                );
+                CREATE TABLE IF NOT EXISTS EventFilter (
+                    Id    INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Nazov TEXT    NOT NULL UNIQUE
+                );
+                CREATE TABLE IF NOT EXISTS Podujatie (
+                    Id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Nazov    TEXT NOT NULL,
+                    Popis    TEXT,
+                    DatumOd  TEXT NOT NULL,
+                    DatumDo  TEXT,
+                    Adresa   TEXT,
+                    Lat      REAL,
+                    Lng      REAL,
+                    MiestoId INTEGER,
+                    FOREIGN KEY (MiestoId) REFERENCES Miesto(Id)
+                );
+                CREATE TABLE IF NOT EXISTS PodujatieTyp (
+                    PodujatieId INTEGER NOT NULL,
+                    TypId       INTEGER NOT NULL,
+                    PRIMARY KEY (PodujatieId, TypId),
+                    FOREIGN KEY (PodujatieId) REFERENCES Podujatie(Id) ON DELETE CASCADE,
+                    FOREIGN KEY (TypId)       REFERENCES TypPodujatia(Id)
+                );
+                CREATE TABLE IF NOT EXISTS PodujatieFilter (
+                    PodujatieId INTEGER NOT NULL,
+                    FilterId    INTEGER NOT NULL,
+                    PRIMARY KEY (PodujatieId, FilterId),
+                    FOREIGN KEY (PodujatieId) REFERENCES Podujatie(Id) ON DELETE CASCADE,
+                    FOREIGN KEY (FilterId)    REFERENCES EventFilter(Id)
+                );
+            ");
+        }
     }
 
     private async Task SeedAsync()

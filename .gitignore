@@ -13,6 +13,11 @@ obj/
 # macOS
 .DS_Store
 
+# Secrets — NEVER commit these
+appsettings.Development.json
+.env
+*.env
+
 # User-specific
 *.user
 launchSettings.json
