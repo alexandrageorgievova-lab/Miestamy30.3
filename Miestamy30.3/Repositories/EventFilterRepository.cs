@@ -10,8 +10,10 @@ public class EventFilterRepository(DbConnectionFactory factory) : IEventFilterRe
     public async Task<int> Create(EventFilter filter)
     {
         using var conn = factory.Create();
-        return await conn.ExecuteScalarAsync<int>(
-            "INSERT INTO EventFilter (Nazov) VALUES (@Nazov); SELECT last_insert_rowid();", filter);
+        var sql = factory.IsPostgres
+            ? "INSERT INTO EventFilter (Nazov) VALUES (@Nazov) RETURNING Id"
+            : "INSERT INTO EventFilter (Nazov) VALUES (@Nazov); SELECT last_insert_rowid();";
+        return await conn.ExecuteScalarAsync<int>(sql, filter);
     }
 
     public async Task<IEnumerable<EventFilter>> GetAll()

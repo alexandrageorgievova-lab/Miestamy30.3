@@ -13,11 +13,7 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await SeedEventsAsync();
     }
 
-    private bool IsPostgres()
-    {
-        using var conn = factory.Create();
-        return conn is Npgsql.NpgsqlConnection;
-    }
+    private bool IsPostgres() => factory.IsPostgres;
 
     private async Task CreateSchemaAsync()
     {
@@ -567,12 +563,13 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
             "Filmové premietanie", "Diskusia / Panel", "Vernisáž", "Trh / Market",
             "Šport. podujatie", "Párty / Rave", "Stand-up", "Otvorené dvere", "Plein air"
         };
+        var insertTypSql = factory.IsPostgres
+            ? "INSERT INTO TypPodujatia (Nazov) VALUES (@Nazov) RETURNING Id"
+            : "INSERT INTO TypPodujatia (Nazov) VALUES (@Nazov); SELECT last_insert_rowid();";
         var typIds = new Dictionary<string, int>();
         foreach (var t in typy)
         {
-            var id = await conn.ExecuteScalarAsync<int>(@"
-                INSERT INTO TypPodujatia (Nazov) VALUES (@Nazov);
-                SELECT last_insert_rowid();", new { Nazov = t });
+            var id = await conn.ExecuteScalarAsync<int>(insertTypSql, new { Nazov = t });
             typIds[t] = id;
         }
 
@@ -582,12 +579,13 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
             "Pre deti", "18+", "Pet friendly", "Vegan-friendly", "Bezbariérový prístup",
             "Registrácia nutná", "Online / Hybrid"
         };
+        var insertFilterSql = factory.IsPostgres
+            ? "INSERT INTO EventFilter (Nazov) VALUES (@Nazov) RETURNING Id"
+            : "INSERT INTO EventFilter (Nazov) VALUES (@Nazov); SELECT last_insert_rowid();";
         var filtreIds = new Dictionary<string, int>();
         foreach (var f in filtreNazvy)
         {
-            var id = await conn.ExecuteScalarAsync<int>(@"
-                INSERT INTO EventFilter (Nazov) VALUES (@Nazov);
-                SELECT last_insert_rowid();", new { Nazov = f });
+            var id = await conn.ExecuteScalarAsync<int>(insertFilterSql, new { Nazov = f });
             filtreIds[f] = id;
         }
 
@@ -596,30 +594,37 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
             await conn.QuerySingleOrDefaultAsync<int?>(
                 "SELECT Id FROM Miesto WHERE Nazov = @Nazov", new { Nazov = nazov });
 
+        var insertEventSql = factory.IsPostgres
+            ? @"INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId)
+                VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId) RETURNING Id"
+            : @"INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId)
+                VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId);
+                SELECT last_insert_rowid();";
+
         async Task<int> AddEvent(string nazov, string popis, string datumOd, string? datumDo,
             string? adresa, double? lat, double? lng, int? miestoId) =>
-            await conn.ExecuteScalarAsync<int>(@"
-                INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId)
-                VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId);
-                SELECT last_insert_rowid();",
+            await conn.ExecuteScalarAsync<int>(insertEventSql,
                 new { Nazov = nazov, Popis = popis, DatumOd = datumOd, DatumDo = datumDo,
                       Adresa = adresa, Lat = lat, Lng = lng, MiestoId = miestoId });
+
+        var linkTypSql = factory.IsPostgres
+            ? "INSERT INTO PodujatieTyp (PodujatieId, TypId) VALUES (@PodujatieId, @TypId) ON CONFLICT DO NOTHING"
+            : "INSERT OR IGNORE INTO PodujatieTyp (PodujatieId, TypId) VALUES (@PodujatieId, @TypId)";
+        var linkFilterESql = factory.IsPostgres
+            ? "INSERT INTO PodujatieFilter (PodujatieId, FilterId) VALUES (@PodujatieId, @FilterId) ON CONFLICT DO NOTHING"
+            : "INSERT OR IGNORE INTO PodujatieFilter (PodujatieId, FilterId) VALUES (@PodujatieId, @FilterId)";
 
         async Task LinkTyp(int podId, string typNazov)
         {
             if (typIds.TryGetValue(typNazov, out var tid))
-                await conn.ExecuteAsync(
-                    "INSERT OR IGNORE INTO PodujatieTyp (PodujatieId, TypId) VALUES (@PodujatieId, @TypId)",
-                    new { PodujatieId = podId, TypId = tid });
+                await conn.ExecuteAsync(linkTypSql, new { PodujatieId = podId, TypId = tid });
         }
 
         async Task LinkFiltreE(int podId, params string[] nazvy)
         {
             foreach (var f in nazvy)
                 if (filtreIds.TryGetValue(f, out var fid))
-                    await conn.ExecuteAsync(
-                        "INSERT OR IGNORE INTO PodujatieFilter (PodujatieId, FilterId) VALUES (@PodujatieId, @FilterId)",
-                        new { PodujatieId = podId, FilterId = fid });
+                    await conn.ExecuteAsync(linkFilterESql, new { PodujatieId = podId, FilterId = fid });
         }
 
         // ── Načítaj ID miest ─────────────────────────────────────────────────────

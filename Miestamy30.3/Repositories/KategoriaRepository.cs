@@ -10,9 +10,10 @@ public class KategoriaRepository(DbConnectionFactory factory) : IKategoriaReposi
     public async Task<int> Create(Kategoria kategoria)
     {
         using var conn = factory.Create();
-        return await conn.ExecuteScalarAsync<int>(
-            "INSERT INTO Kategoria (Nazov) VALUES (@Nazov); SELECT last_insert_rowid();",
-            kategoria);
+        var sql = factory.IsPostgres
+            ? "INSERT INTO Kategoria (Nazov) VALUES (@Nazov) RETURNING Id"
+            : "INSERT INTO Kategoria (Nazov) VALUES (@Nazov); SELECT last_insert_rowid();";
+        return await conn.ExecuteScalarAsync<int>(sql, kategoria);
     }
 
     public async Task<IEnumerable<Kategoria>> GetAll()

@@ -11,10 +11,13 @@ public class PodujatieRepository(DbConnectionFactory factory) : IPodujatieReposi
     public async Task<int> Create(Podujatie p)
     {
         using var conn = factory.Create();
-        return await conn.ExecuteScalarAsync<int>(@"
-            INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId)
-            VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId);
-            SELECT last_insert_rowid();", p);
+        var sql = factory.IsPostgres
+            ? @"INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId)
+                VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId) RETURNING Id"
+            : @"INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId)
+                VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId);
+                SELECT last_insert_rowid();";
+        return await conn.ExecuteScalarAsync<int>(sql, p);
     }
 
     public async Task<IEnumerable<Podujatie>> GetAll()
@@ -133,16 +136,18 @@ public class PodujatieRepository(DbConnectionFactory factory) : IPodujatieReposi
     public async Task AddTyp(int podujatieId, int typId)
     {
         using var conn = factory.Create();
-        await conn.ExecuteAsync(@"
-            INSERT OR IGNORE INTO PodujatieTyp (PodujatieId, TypId) VALUES (@PodujatieId, @TypId)",
-            new { PodujatieId = podujatieId, TypId = typId });
+        var sql = factory.IsPostgres
+            ? "INSERT INTO PodujatieTyp (PodujatieId, TypId) VALUES (@PodujatieId, @TypId) ON CONFLICT DO NOTHING"
+            : "INSERT OR IGNORE INTO PodujatieTyp (PodujatieId, TypId) VALUES (@PodujatieId, @TypId)";
+        await conn.ExecuteAsync(sql, new { PodujatieId = podujatieId, TypId = typId });
     }
 
     public async Task AddFilter(int podujatieId, int filterId)
     {
         using var conn = factory.Create();
-        await conn.ExecuteAsync(@"
-            INSERT OR IGNORE INTO PodujatieFilter (PodujatieId, FilterId) VALUES (@PodujatieId, @FilterId)",
-            new { PodujatieId = podujatieId, FilterId = filterId });
+        var sql = factory.IsPostgres
+            ? "INSERT INTO PodujatieFilter (PodujatieId, FilterId) VALUES (@PodujatieId, @FilterId) ON CONFLICT DO NOTHING"
+            : "INSERT OR IGNORE INTO PodujatieFilter (PodujatieId, FilterId) VALUES (@PodujatieId, @FilterId)";
+        await conn.ExecuteAsync(sql, new { PodujatieId = podujatieId, FilterId = filterId });
     }
 }

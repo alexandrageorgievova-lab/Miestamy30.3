@@ -10,9 +10,10 @@ public class FilterRepository(DbConnectionFactory factory) : IFilterRepository
     public async Task<int> Create(Filter filter)
     {
         using var conn = factory.Create();
-        return await conn.ExecuteScalarAsync<int>(
-            "INSERT INTO Filter (Nazov, KategoriaId) VALUES (@Nazov, @KategoriaId); SELECT last_insert_rowid();",
-            filter);
+        var sql = factory.IsPostgres
+            ? "INSERT INTO Filter (Nazov, KategoriaId) VALUES (@Nazov, @KategoriaId) RETURNING Id"
+            : "INSERT INTO Filter (Nazov, KategoriaId) VALUES (@Nazov, @KategoriaId); SELECT last_insert_rowid();";
+        return await conn.ExecuteScalarAsync<int>(sql, filter);
     }
 
     public async Task<IEnumerable<Filter>> GetAll()

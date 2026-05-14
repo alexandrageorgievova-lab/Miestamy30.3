@@ -28,8 +28,8 @@ public class DbConnectionFactory(IConfiguration configuration)
         return $"Host={uri.Host};Port={uri.Port};Database={database};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
     }
 
-    private bool IsPostgres => _connectionString.StartsWith("Host=")
-                            || _connectionString.StartsWith("Server=");
+    public bool IsPostgres => _connectionString.StartsWith("Host=")
+                           || _connectionString.StartsWith("Server=");
 
     public IDbConnection Create() => IsPostgres
         ? new NpgsqlConnection(_connectionString)

@@ -10,8 +10,10 @@ public class TypPodujatiaRepository(DbConnectionFactory factory) : ITypPodujatia
     public async Task<int> Create(TypPodujatia typ)
     {
         using var conn = factory.Create();
-        return await conn.ExecuteScalarAsync<int>(
-            "INSERT INTO TypPodujatia (Nazov) VALUES (@Nazov); SELECT last_insert_rowid();", typ);
+        var sql = factory.IsPostgres
+            ? "INSERT INTO TypPodujatia (Nazov) VALUES (@Nazov) RETURNING Id"
+            : "INSERT INTO TypPodujatia (Nazov) VALUES (@Nazov); SELECT last_insert_rowid();";
+        return await conn.ExecuteScalarAsync<int>(sql, typ);
     }
 
     public async Task<IEnumerable<TypPodujatia>> GetAll()
