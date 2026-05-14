@@ -55,6 +55,10 @@
             "Microsoft.Data.Sqlite": {
               "target": "Package",
               "version": "[9.0.4, )"
+            },
+            "Npgsql": {
+              "target": "Package",
+              "version": "[9.0.3, )"
             }
           },
           "imports": [
