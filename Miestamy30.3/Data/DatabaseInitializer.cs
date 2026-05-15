@@ -192,6 +192,8 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
             if (miestoKategoriaCount > 0) return; // fully seeded
 
             // Partial seed: categories/places exist but links are missing — wipe and re-seed
+            // Must null out MiestoId on Podujatie first to avoid FK violation when deleting Miesto
+            await checkConn.ExecuteAsync("UPDATE Podujatie SET MiestoId = NULL");
             await checkConn.ExecuteAsync("DELETE FROM MiestoFilter");
             await checkConn.ExecuteAsync("DELETE FROM MiestoKategoria");
             await checkConn.ExecuteAsync("DELETE FROM Miesto");
