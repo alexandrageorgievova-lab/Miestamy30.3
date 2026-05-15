@@ -80,7 +80,7 @@ public class MiestoRepository(DbConnectionFactory factory) : IMiestoRepository
             INNER JOIN MiestoFilter    mf ON m.Id       = mf.MiestoId
             INNER JOIN Filter           f ON mf.FilterId = f.Id
             INNER JOIN Kategoria        k ON f.KategoriaId = k.Id
-            INNER JOIN MiestoKategoria mk ON m.Id = mk.MiestoId AND mk.JeHlavna = 1
+            INNER JOIN MiestoKategoria mk ON m.Id = mk.MiestoId AND mk.JeHlavna
             INNER JOIN Kategoria       k2 ON mk.KategoriaId = k2.Id
             WHERE f.Nazov = @FilterNazov
             ORDER BY m.Nazov",
@@ -142,7 +142,7 @@ public class MiestoRepository(DbConnectionFactory factory) : IMiestoRepository
             : @"INSERT OR IGNORE INTO MiestoKategoria (MiestoId, KategoriaId, JeHlavna)
                 VALUES (@MiestoId, @KategoriaId, @JeHlavna)";
         await conn.ExecuteAsync(sql,
-            new { MiestoId = miestoId, KategoriaId = kategoriaId, JeHlavna = jeHlavna ? 1 : 0 });
+            new { MiestoId = miestoId, KategoriaId = kategoriaId, JeHlavna = jeHlavna });
     }
 
     public async Task AddFilter(int miestoId, int filterId)

@@ -9,6 +9,7 @@
 
     <ItemGroup>
         <PackageReference Include="Dapper" Version="2.1.35" />
+        <PackageReference Include="HtmlAgilityPack" Version="1.11.72" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.12" />
         <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.4" />
         <PackageReference Include="Npgsql" Version="9.0.3" />

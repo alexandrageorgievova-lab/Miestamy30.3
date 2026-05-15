@@ -9,8 +9,24 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
     public async Task InitializeAsync()
     {
         await CreateSchemaAsync();
+        await MigrateSchemaAsync();
         await SeedAsync();
         await SeedEventsAsync();
+    }
+
+    private async Task MigrateSchemaAsync()
+    {
+        using var conn = factory.Create();
+        if (IsPostgres())
+        {
+            await conn.ExecuteAsync("ALTER TABLE Podujatie ADD COLUMN IF NOT EXISTS ImageUrl TEXT");
+            await conn.ExecuteAsync("ALTER TABLE Podujatie ADD COLUMN IF NOT EXISTS SourceUrl TEXT");
+        }
+        else
+        {
+            try { await conn.ExecuteAsync("ALTER TABLE Podujatie ADD COLUMN ImageUrl TEXT"); } catch { }
+            try { await conn.ExecuteAsync("ALTER TABLE Podujatie ADD COLUMN SourceUrl TEXT"); } catch { }
+        }
     }
 
     private bool IsPostgres() => factory.IsPostgres;
@@ -168,8 +184,20 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
 
     private async Task SeedAsync()
     {
-        var existingKategorie = await kategoriaRepo.GetAll();
-        if (existingKategorie.Any()) return; // already seeded
+        using var checkConn = factory.Create();
+        var kategoriaCount = await checkConn.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Kategoria");
+        if (kategoriaCount > 0)
+        {
+            var miestoKategoriaCount = await checkConn.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM MiestoKategoria");
+            if (miestoKategoriaCount > 0) return; // fully seeded
+
+            // Partial seed: categories/places exist but links are missing — wipe and re-seed
+            await checkConn.ExecuteAsync("DELETE FROM MiestoFilter");
+            await checkConn.ExecuteAsync("DELETE FROM MiestoKategoria");
+            await checkConn.ExecuteAsync("DELETE FROM Miesto");
+            await checkConn.ExecuteAsync("DELETE FROM Filter");
+            await checkConn.ExecuteAsync("DELETE FROM Kategoria");
+        }
 
         // ── 1. Kategorie ────────────────────────────────────────────────────────
         var kategorieNazvy = new[] { "Kaviarne", "Jedlo", "Hudba", "Kultúra", "Šport", "Drinks", "Outdoor", "Fashion", "Craft", "Knihy" };
@@ -564,14 +592,10 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
             "Šport. podujatie", "Párty / Rave", "Stand-up", "Otvorené dvere", "Plein air"
         };
         var insertTypSql = factory.IsPostgres
-            ? "INSERT INTO TypPodujatia (Nazov) VALUES (@Nazov) RETURNING Id"
-            : "INSERT INTO TypPodujatia (Nazov) VALUES (@Nazov); SELECT last_insert_rowid();";
-        var typIds = new Dictionary<string, int>();
+            ? "INSERT INTO TypPodujatia (Nazov) VALUES (@Nazov) ON CONFLICT DO NOTHING"
+            : "INSERT OR IGNORE INTO TypPodujatia (Nazov) VALUES (@Nazov)";
         foreach (var t in typy)
-        {
-            var id = await conn.ExecuteScalarAsync<int>(insertTypSql, new { Nazov = t });
-            typIds[t] = id;
-        }
+            await conn.ExecuteAsync(insertTypSql, new { Nazov = t });
 
         // ── Event filtre ─────────────────────────────────────────────────────────
         var filtreNazvy = new[] {
@@ -580,224 +604,14 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
             "Registrácia nutná", "Online / Hybrid"
         };
         var insertFilterSql = factory.IsPostgres
-            ? "INSERT INTO EventFilter (Nazov) VALUES (@Nazov) RETURNING Id"
-            : "INSERT INTO EventFilter (Nazov) VALUES (@Nazov); SELECT last_insert_rowid();";
-        var filtreIds = new Dictionary<string, int>();
+            ? "INSERT INTO EventFilter (Nazov) VALUES (@Nazov) ON CONFLICT DO NOTHING"
+            : "INSERT OR IGNORE INTO EventFilter (Nazov) VALUES (@Nazov)";
         foreach (var f in filtreNazvy)
-        {
-            var id = await conn.ExecuteScalarAsync<int>(insertFilterSql, new { Nazov = f });
-            filtreIds[f] = id;
-        }
+            await conn.ExecuteAsync(insertFilterSql, new { Nazov = f });
 
-        // ── Helpers ──────────────────────────────────────────────────────────────
-        async Task<int?> MId(string nazov) =>
-            await conn.QuerySingleOrDefaultAsync<int?>(
-                "SELECT Id FROM Miesto WHERE Nazov = @Nazov", new { Nazov = nazov });
-
-        var insertEventSql = factory.IsPostgres
-            ? @"INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId)
-                VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId) RETURNING Id"
-            : @"INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId)
-                VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId);
-                SELECT last_insert_rowid();";
-
-        async Task<int> AddEvent(string nazov, string popis, string datumOd, string? datumDo,
-            string? adresa, double? lat, double? lng, int? miestoId) =>
-            await conn.ExecuteScalarAsync<int>(insertEventSql,
-                new { Nazov = nazov, Popis = popis, DatumOd = datumOd, DatumDo = datumDo,
-                      Adresa = adresa, Lat = lat, Lng = lng, MiestoId = miestoId });
-
-        var linkTypSql = factory.IsPostgres
-            ? "INSERT INTO PodujatieTyp (PodujatieId, TypId) VALUES (@PodujatieId, @TypId) ON CONFLICT DO NOTHING"
-            : "INSERT OR IGNORE INTO PodujatieTyp (PodujatieId, TypId) VALUES (@PodujatieId, @TypId)";
-        var linkFilterESql = factory.IsPostgres
-            ? "INSERT INTO PodujatieFilter (PodujatieId, FilterId) VALUES (@PodujatieId, @FilterId) ON CONFLICT DO NOTHING"
-            : "INSERT OR IGNORE INTO PodujatieFilter (PodujatieId, FilterId) VALUES (@PodujatieId, @FilterId)";
-
-        async Task LinkTyp(int podId, string typNazov)
-        {
-            if (typIds.TryGetValue(typNazov, out var tid))
-                await conn.ExecuteAsync(linkTypSql, new { PodujatieId = podId, TypId = tid });
-        }
-
-        async Task LinkFiltreE(int podId, params string[] nazvy)
-        {
-            foreach (var f in nazvy)
-                if (filtreIds.TryGetValue(f, out var fid))
-                    await conn.ExecuteAsync(linkFilterESql, new { PodujatieId = podId, FilterId = fid });
-        }
-
-        // ── Načítaj ID miest ─────────────────────────────────────────────────────
-        var fugaId        = await MId("Fuga");
-        var subdeckId     = await MId("Subdeck");
-        var sngId         = await MId("SNG");
-        var sndId         = await MId("SND");
-        var lumiereId     = await MId("Kino Lumiére");
-        var gmbId         = await MId("GMB");
-        var kcId          = await MId("KC Nová Cvernovka");
-        var pinkWhaleId   = await MId("PinkWhale");
-        var a4Id          = await MId("A4");
-        var kaceckoId     = await MId("Kácéčko");
-        var labsterId     = await MId("Labster");
-        var fotoskId      = await MId("Foto.sk");
-        var mudronkaId    = await MId("Mudronka");
-        var slavinId      = await MId("Slavín");
-        var lidoId        = await MId("Lido / Elýzium");
-        var jungleId      = await MId("Jungle Roastery");
-        var trznicaId     = await MId("Stará Tržnica");
-        var ejtytuId      = await MId("EjTyTu Streetfood");
-        var artforumId    = await MId("Artforum");
-        var buffetId      = await MId("Buffet Clothing");
-
-        // ── 25 podujatí ──────────────────────────────────────────────────────────
-        var e1 = await AddEvent("Jazz večer vo Fuge",
-            "Večer plný jazzovej improvizácie s hosťami z celého Slovenska.",
-            "2026-05-03", null, "Námestie SNP, Bratislava", 48.1441, 17.1098, fugaId);
-        await LinkTyp(e1, "Koncert");
-        await LinkFiltreE(e1, "Platené", "S lístkom", "V interiéri");
-
-        var e2 = await AddEvent("Subdeck: Drum & Bass Night",
-            "Nočná DnB session s local DJs a hosťujúcim umelcom z Prahy.",
-            "2026-05-10", null, "Rybné nám., Bratislava", 48.1432, 17.1072, subdeckId);
-        await LinkTyp(e2, "Párty / Rave");
-        await LinkFiltreE(e2, "18+", "S lístkom", "Platené", "V interiéri");
-
-        var e3 = await AddEvent("Slovenský dizajn 2026",
-            "Výstava najlepšieho slovenského produktového a grafického dizajnu za posledné desaťročie.",
-            "2026-05-15", "2026-07-15", "Rázusovo nábrežie, Bratislava", 48.1408, 17.1075, sngId);
-        await LinkTyp(e3, "Výstava");
-        await LinkFiltreE(e3, "Platené", "V interiéri", "Bezbariérový prístup");
-
-        var e4 = await AddEvent("Workshop: Street Photography",
-            "Celodenný workshop pouličnej fotografie so skúseným fotografom. Vlastný fotoaparát nutný.",
-            "2026-05-16", null, "Tomášikova, Bratislava", 48.1565, 17.1428, labsterId);
-        await LinkTyp(e4, "Workshop");
-        await LinkFiltreE(e4, "Platené", "V interiéri", "Registrácia nutná");
-
-        var e5 = await AddEvent("Bratislava Design Week",
-            "Päťdňový festival dizajnu, architektúry a vizuálnej kultúry v srdci mesta.",
-            "2026-05-18", "2026-05-24", "Námestie SNP, Bratislava", 48.1442, 17.1107, trznicaId);
-        await LinkTyp(e5, "Festival");
-        await LinkFiltreE(e5, "Zadarmo", "V interiéri", "Pre deti", "Bezbariérový prístup");
-
-        var e6 = await AddEvent("Hamlet – SND",
-            "Shakespearova tragédia v réžii renomovaného slovenského režiséra.",
-            "2026-05-20", null, "Pribinova, Bratislava", 48.1404, 17.1139, sndId);
-        await LinkTyp(e6, "Divadelné predstavenie");
-        await LinkFiltreE(e6, "Platené", "S lístkom", "V interiéri", "Bezbariérový prístup");
-
-        var e7 = await AddEvent("Cannes 2026: Výber filmov",
-            "Špeciálna projekcia výberu z programu Filmového festivalu v Cannes.",
-            "2026-05-22", null, "Špitálska, Bratislava", 48.1477, 17.1068, lumiereId);
-        await LinkTyp(e7, "Filmové premietanie");
-        await LinkFiltreE(e7, "Platené", "S lístkom", "V interiéri");
-
-        var e8 = await AddEvent("Vernisáž: Urban Fragments",
-            "Otvorenie výstavy fotografií dokumentujúcich premenu bratislavských štvrtí.",
-            "2026-05-28", null, "Mirbachov palác, Bratislava", 48.1447, 17.1094, gmbId);
-        await LinkTyp(e8, "Vernisáž");
-        await LinkFiltreE(e8, "Zadarmo", "V interiéri", "Bezbariérový prístup");
-
-        var e9 = await AddEvent("Trh mladých dizajnérov",
-            "Mesačný trh s tvorbou lokálnych dizajnérov, ilustrátorov a remeselníkov.",
-            "2026-06-01", null, "Račianska, Bratislava", 48.1579, 17.1361, kcId);
-        await LinkTyp(e9, "Trh / Market");
-        await LinkFiltreE(e9, "Zadarmo", "Vonku", "Pre deti", "Pet friendly");
-
-        var e10 = await AddEvent("PinkWhale: Indie Noc",
-            "Intenzívny koncertný večer so štyrmi indie kapelami v unikátnom priestore.",
-            "2026-06-05", null, "Stará Vajnorská, Bratislava", 48.1681, 17.1415, pinkWhaleId);
-        await LinkTyp(e10, "Koncert");
-        await LinkFiltreE(e10, "Platené", "S lístkom", "V interiéri", "18+");
-
-        var e11 = await AddEvent("Stand-up Comedy Night",
-            "Večer so slovenskými stand-up komikmi a prekvapivými hosťami.",
-            "2026-06-07", null, "Kollárovo nám., Bratislava", 48.1498, 17.1063, kaceckoId);
-        await LinkTyp(e11, "Stand-up");
-        await LinkFiltreE(e11, "Platené", "S lístkom", "18+", "V interiéri");
-
-        var e12 = await AddEvent("Workshop: Filmový fotobooth",
-            "Naučíš sa obsluhovať analógový fotoaparát a vyvoláš si vlastné filmy v labre.",
-            "2026-06-10", null, "Obchodná, Bratislava", 48.1462, 17.1071, fotoskId);
-        await LinkTyp(e12, "Workshop");
-        await LinkFiltreE(e12, "Platené", "Registrácia nutná", "V interiéri");
-
-        var e13 = await AddEvent("Otvorené dvere: KC Nová Cvernovka",
-            "Deň otvorených dverí: prehliadka priestoru, workshopy zadarmo a živá hudba na dvore.",
-            "2026-06-14", null, "Račianska, Bratislava", 48.1579, 17.1361, kcId);
-        await LinkTyp(e13, "Otvorené dvere");
-        await LinkFiltreE(e13, "Zadarmo", "Vonku", "Pet friendly", "Pre deti");
-
-        var e14 = await AddEvent("Plein Air: Slavín",
-            "Skupinové maľovanie en plein air s výhľadom na celú Bratislavu. Farby a plátno k dispozícii.",
-            "2026-06-20", null, "Slavín, Bratislava", 48.1549, 17.0978, slavinId);
-        await LinkTyp(e14, "Plein air");
-        await LinkFiltreE(e14, "Zadarmo", "Vonku", "Registrácia nutná");
-
-        var e15 = await AddEvent("Streetball Turnaj",
-            "Trojčlenné tímy, dve ihriská, jeden víťaz. Registruj sa a bojuj o pohár z Mudronky.",
-            "2026-06-21", null, "Horský park, Bratislava", 48.1581, 17.0892, mudronkaId);
-        await LinkTyp(e15, "Šport. podujatie");
-        await LinkFiltreE(e15, "Zadarmo", "Vonku", "Registrácia nutná");
-
-        var e16 = await AddEvent("Diskusia: Budúcnosť Bratislavy",
-            "Panelová diskusia s architektmi, urbanistami a zástupcami mesta o tom, aké mesto chceme.",
-            "2026-06-25", null, "Karpatská, Bratislava", 48.1463, 17.1035, a4Id);
-        await LinkTyp(e16, "Diskusia / Panel");
-        await LinkFiltreE(e16, "Zadarmo", "V interiéri", "Bezbariérový prístup");
-
-        var e17 = await AddEvent("Pohoda Warm-Up Party",
-            "Predpohôdový večer s najlepším music programom a food corner priamo v Starej Tržnici.",
-            "2026-07-04", null, "Námestie SNP, Bratislava", 48.1442, 17.1107, trznicaId);
-        await LinkTyp(e17, "Festival");
-        await LinkFiltreE(e17, "Platené", "S lístkom", "V interiéri", "18+");
-
-        var e18 = await AddEvent("Acoustic Session: Jungle Roastery",
-            "Neformálny akustický koncert v útulnej kaviarni. Vstup voľný, odporúča sa rezervácia miesta.",
-            "2026-07-06", null, "Dostojevského rad, Bratislava", 48.1452, 17.1086, jungleId);
-        await LinkTyp(e18, "Koncert");
-        await LinkFiltreE(e18, "Zadarmo", "Bez lístka", "V interiéri");
-
-        var e19 = await AddEvent("Mladí umelci SK 2026",
-            "Letná skupinová výstava absolventov VŠVU a AFAD – maľba, socha, digitálne médiá.",
-            "2026-07-10", "2026-08-30", "Mirbachov palác, Bratislava", 48.1447, 17.1094, gmbId);
-        await LinkTyp(e19, "Výstava");
-        await LinkFiltreE(e19, "Platené", "V interiéri");
-
-        var e20 = await AddEvent("Letné kino: Lido",
-            "Vonkajšie premietanie filmov každý utorok a piatok pri Dunaji. Bring your blanket!",
-            "2026-07-15", "2026-08-29", "Tyršovo nábrežie, Bratislava", 48.1304, 17.0888, lidoId);
-        await LinkTyp(e20, "Filmové premietanie");
-        await LinkFiltreE(e20, "Zadarmo", "Vonku", "Pet friendly", "Pre deti");
-
-        var e21 = await AddEvent("Letný Rave: Subdeck",
-            "Dlhá noc elektronickej hudby so zahraničnými headlinermi.",
-            "2026-07-18", null, "Rybné nám., Bratislava", 48.1432, 17.1072, subdeckId);
-        await LinkTyp(e21, "Párty / Rave");
-        await LinkFiltreE(e21, "18+", "Platené", "S lístkom", "V interiéri");
-
-        var e22 = await AddEvent("Vintage & Craft Trh",
-            "Mesačný víkendový trh s vintage oblečením, handmade šperkami a upcyklovanými predmetmi.",
-            "2026-07-25", null, "Miletičova, Bratislava", 48.1378, 17.1289, ejtytuId);
-        await LinkTyp(e22, "Trh / Market");
-        await LinkFiltreE(e22, "Zadarmo", "Vonku", "Vegan-friendly");
-
-        var e23 = await AddEvent("Vernisáž: Štrkovecké zrkadlá",
-            "Fotografická výstava zachytávajúca jazero v rôznych ročných obdobiach.",
-            "2026-08-05", null, "Kozia, Bratislava", 48.1453, 17.1118, artforumId);
-        await LinkTyp(e23, "Vernisáž");
-        await LinkFiltreE(e23, "Zadarmo", "V interiéri");
-
-        var e24 = await AddEvent("Workshop: Upcycling módy",
-            "Nauč sa premeniť staré oblečenie na nové kúsky. Materiál zabezpečený.",
-            "2026-08-12", null, "Obchodná, Bratislava", 48.1462, 17.1074, buffetId);
-        await LinkTyp(e24, "Workshop");
-        await LinkFiltreE(e24, "Platené", "Registrácia nutná", "V interiéri");
-
-        var e25 = await AddEvent("Street Food Weekend",
-            "Dvojdňový festival street food z celého sveta s živou hudbou a detským kútom.",
-            "2026-08-22", "2026-08-23", "Račianska, Bratislava", 48.1579, 17.1361, kcId);
-        await LinkTyp(e25, "Festival");
-        await LinkFiltreE(e25, "Zadarmo", "Vonku", "Pre deti", "Pet friendly", "Vegan-friendly");
     }
+
+
+
+
 }

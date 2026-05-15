@@ -232,6 +232,8 @@
     .detail-img {
       height: 160px;
       background: var(--navy);
+      background-size: cover;
+      background-position: center;
       flex-shrink: 0;
       display: flex;
       align-items: flex-end;
@@ -245,6 +247,12 @@
       inset: 14px;
       border: 2px dashed rgba(255,255,255,0.2);
       border-radius: 6px;
+    }
+    .detail-img.has-image::before {
+      inset: 0;
+      border: none;
+      border-radius: 0;
+      background: linear-gradient(transparent 35%, rgba(0,0,0,0.55));
     }
     .detail-img-label {
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -844,6 +852,17 @@ function renderPlaceList(items) {
     </div>`).join('');
 }
 
+function setDetailImage(imageUrl) {
+  const img = document.querySelector('.detail-img');
+  if (imageUrl) {
+    img.style.backgroundImage = `url(${imageUrl})`;
+    img.classList.add('has-image');
+  } else {
+    img.style.backgroundImage = '';
+    img.classList.remove('has-image');
+  }
+}
+
 async function showDetail(id) {
   document.querySelectorAll('.place-row').forEach(el =>
     el.classList.toggle('active', parseInt(el.dataset.id) === id));
@@ -851,6 +870,7 @@ async function showDetail(id) {
   const detail = await get(`/miesta/${id}/detail`);
   document.getElementById('detail-label').textContent = detail.nazov;
   document.getElementById('detail-back-label').textContent = currentKat ? currentKat.nazov : 'Späť';
+  setDetailImage(null);
   const sections = Object.entries(detail.filtre || {}).map(([kat, filtre]) => `
     <div class="detail-filter-group">
       <div class="detail-filter-kat">${kat}</div>
@@ -962,6 +982,7 @@ async function showEventDetail(id) {
   const detail = await get(`/podujatia/${id}/detail`);
   document.getElementById('detail-label').textContent = detail.nazov;
   document.getElementById('detail-back-label').textContent = currentTyp ? currentTyp.nazov : 'Späť';
+  setDetailImage(detail.imageUrl || null);
   const typy       = (detail.typy   || []).map(t => `<span class="event-badge">${t}</span>`).join('');
   const filtrChips = (detail.filtre || []).map(f => `<span class="detail-chip">${f}</span>`).join('');
   document.getElementById('detail-body').innerHTML = `
@@ -971,7 +992,8 @@ async function showEventDetail(id) {
     ${detail.miestoNazov ? `<div class="detail-addr" style="margin-top:-10px">🏠 ${detail.miestoNazov}</div>` : ''}
     ${typy       ? `<div class="detail-cats">${typy}</div>` : ''}
     ${filtrChips ? `<div class="detail-section-title">Filtre</div><div class="detail-filter-chips" style="margin-bottom:8px">${filtrChips}</div>` : ''}
-    ${detail.popis ? `<div class="detail-section-title">O podujatí</div><p style="font-size:13px;color:rgba(32,41,120,0.75);line-height:1.6">${detail.popis}</p>` : ''}`;
+    ${detail.popis ? `<div class="detail-section-title">O podujatí</div><p style="font-size:13px;color:rgba(32,41,120,0.75);line-height:1.6">${detail.popis}</p>` : ''}
+    ${detail.sourceUrl ? `<div style="margin-top:14px"><a href="${detail.sourceUrl}" target="_blank" style="font-size:12px;color:var(--orange);text-decoration:none;font-weight:600">→ Viac info</a></div>` : ''}`;
   openDetailPanel();
 }
 

@@ -12,10 +12,10 @@ public class PodujatieRepository(DbConnectionFactory factory) : IPodujatieReposi
     {
         using var conn = factory.Create();
         var sql = factory.IsPostgres
-            ? @"INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId)
-                VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId) RETURNING Id"
-            : @"INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId)
-                VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId);
+            ? @"INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId, ImageUrl, SourceUrl)
+                VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId, @ImageUrl, @SourceUrl) RETURNING Id"
+            : @"INSERT INTO Podujatie (Nazov, Popis, DatumOd, DatumDo, Adresa, Lat, Lng, MiestoId, ImageUrl, SourceUrl)
+                VALUES (@Nazov, @Popis, @DatumOd, @DatumDo, @Adresa, @Lat, @Lng, @MiestoId, @ImageUrl, @SourceUrl);
                 SELECT last_insert_rowid();";
         return await conn.ExecuteScalarAsync<int>(sql, p);
     }
@@ -119,17 +119,19 @@ public class PodujatieRepository(DbConnectionFactory factory) : IPodujatieReposi
 
         return new PodujatieDetailDto
         {
-            Id         = p.Id,
-            Nazov      = p.Nazov,
-            Popis      = p.Popis,
-            DatumOd    = p.DatumOd,
-            DatumDo    = p.DatumDo,
-            Adresa     = p.Adresa,
-            Lat        = p.Lat,
-            Lng        = p.Lng,
+            Id          = p.Id,
+            Nazov       = p.Nazov,
+            Popis       = p.Popis,
+            DatumOd     = p.DatumOd,
+            DatumDo     = p.DatumDo,
+            Adresa      = p.Adresa,
+            Lat         = p.Lat,
+            Lng         = p.Lng,
             MiestoNazov = miestoNazov,
-            Typy       = typy.Select(t => t.Nazov).ToList(),
-            Filtre     = filtre.Select(f => f.Nazov).ToList(),
+            ImageUrl    = p.ImageUrl,
+            SourceUrl   = p.SourceUrl,
+            Typy        = typy.Select(t => t.Nazov).ToList(),
+            Filtre      = filtre.Select(f => f.Nazov).ToList(),
         };
     }
 

@@ -11,6 +11,8 @@ public class PodujatieDetailDto
     public double? Lat { get; set; }
     public double? Lng { get; set; }
     public string? MiestoNazov { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? SourceUrl { get; set; }
     public List<string> Typy { get; set; } = [];
     public List<string> Filtre { get; set; } = [];
 }
