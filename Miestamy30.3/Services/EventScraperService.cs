@@ -64,9 +64,14 @@ public class EventScraperService(
                 continue;
             }
 
+            var cutoff = DateTime.Today.AddDays(21);
+
             foreach (var ev in scraped)
             {
                 if (string.IsNullOrEmpty(ev.SourceUrl)) continue;
+
+                // Skip events more than 3 weeks away
+                if (DateTime.TryParse(ev.DatumOd, out var evDate) && evDate > cutoff) continue;
 
                 var exists = await conn.ExecuteScalarAsync<int>(
                     "SELECT COUNT(*) FROM Podujatie WHERE SourceUrl = @SourceUrl",

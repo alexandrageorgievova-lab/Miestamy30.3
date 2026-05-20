@@ -30,7 +30,13 @@ public class CvernovkaScraper(IHttpClientFactory httpFactory, ILogger<CvernovkaS
         doc.LoadHtml(html);
 
         var events = new List<ScrapedEvent>();
-        var anchors = doc.DocumentNode.SelectNodes("//a[contains(@href,'/program/') and .//h3 and .//img]");
+
+        // Try multiple selectors — site may use article cards or plain anchors
+        var anchors =
+            doc.DocumentNode.SelectNodes("//a[contains(@href,'/program/') and .//*[self::h1 or self::h2 or self::h3 or self::h4]]")
+            ?? doc.DocumentNode.SelectNodes("//article[.//a[contains(@href,'/program/')]]//a[contains(@href,'/program/')]")
+            ?? doc.DocumentNode.SelectNodes("//a[contains(@href,'/program/')]");
+
         if (anchors is null) return events;
 
         foreach (var anchor in anchors)
@@ -38,28 +44,36 @@ public class CvernovkaScraper(IHttpClientFactory httpFactory, ILogger<CvernovkaS
             try
             {
                 var href = anchor.GetAttributeValue("href", "");
-                if (string.IsNullOrEmpty(href) || href == ProgramUrl) continue;
+                if (string.IsNullOrEmpty(href)) continue;
                 var sourceUrl = href.StartsWith("http") ? href : BaseUrl + href;
+                // Skip the listing page itself
+                if (sourceUrl.TrimEnd('/') == ProgramUrl.TrimEnd('/')) continue;
 
-                var titleNode = anchor.SelectSingleNode(".//h3");
+                // Title: first heading inside anchor
+                var titleNode = anchor.SelectSingleNode(".//*[self::h1 or self::h2 or self::h3 or self::h4]");
                 var title = WebUtility.HtmlDecode(titleNode?.InnerText.Trim() ?? "");
                 if (string.IsNullOrEmpty(title)) continue;
 
-                var imgSrc = anchor.SelectSingleNode(".//img")?.GetAttributeValue("src", null);
+                // Image: handle lazy-loaded images (data-src / data-lazy-src)
+                var imgNode = anchor.SelectSingleNode(".//img");
+                var imgSrc = imgNode?.GetAttributeValue("data-lazy-src", null)
+                    ?? imgNode?.GetAttributeValue("data-src", null)
+                    ?? imgNode?.GetAttributeValue("src", null);
+                if (imgSrc != null && !imgSrc.StartsWith("http"))
+                    imgSrc = BaseUrl + imgSrc;
 
-                // Extract text nodes for date and description
+                // Date: scan all text nodes in the anchor
                 string? dateRaw = null;
-                var descParts = new List<string>();
-                bool afterH3 = false;
-                foreach (var child in anchor.ChildNodes)
+                foreach (var node in anchor.DescendantsAndSelf())
                 {
-                    if (child.Name == "h3") { afterH3 = true; continue; }
-                    if (child.NodeType == HtmlNodeType.Text)
+                    if (node.NodeType != HtmlNodeType.Text) continue;
+                    var text = WebUtility.HtmlDecode(node.InnerText).Trim();
+                    if (string.IsNullOrWhiteSpace(text)) continue;
+                    // Date tokens look like "15/05" or "15/05/2026" or "15. 5."
+                    if (System.Text.RegularExpressions.Regex.IsMatch(text, @"\d{1,2}[/\.]\d{1,2}"))
                     {
-                        var text = WebUtility.HtmlDecode(child.InnerText).Trim();
-                        if (string.IsNullOrWhiteSpace(text)) continue;
-                        if (!afterH3) dateRaw = text;
-                        else descParts.Add(text);
+                        dateRaw = text;
+                        break;
                     }
                 }
 
@@ -69,7 +83,6 @@ public class CvernovkaScraper(IHttpClientFactory httpFactory, ILogger<CvernovkaS
                 events.Add(new ScrapedEvent
                 {
                     Nazov      = title,
-                    Popis      = descParts.Count > 0 ? string.Join(" ", descParts) : null,
                     DatumOd    = datumOd,
                     Adresa     = Adresa,
                     Lat        = Lat,
@@ -84,6 +97,9 @@ public class CvernovkaScraper(IHttpClientFactory httpFactory, ILogger<CvernovkaS
                 logger.LogWarning(ex, "CvernovkaScraper: error parsing event item");
             }
         }
+
+        // Deduplicate by SourceUrl (multiple selectors may match the same anchor)
+        events = events.DistinctBy(e => e.SourceUrl).ToList();
 
         logger.LogInformation("CvernovkaScraper: scraped {Count} events", events.Count);
         return events;
