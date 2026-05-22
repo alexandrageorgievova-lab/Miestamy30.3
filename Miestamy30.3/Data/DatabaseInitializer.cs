@@ -33,12 +33,69 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         // Seed image URLs for known venues (idempotent — only sets where still NULL)
         var imageSeeds = new[]
         {
-            ("KC Nová Cvernovka", "https://novacvernovka.eu/wp-content/plugins/hk-cvernovka/images/fb-meta-univerzal.jpg"),
-            ("A4",                "https://a4.sk/wp-content/uploads/2021/04/IMG_5558.jpg"),
-            ("Stará Tržnica",     "https://staratrznica.sk/assets/img/og.jpg"),
+            // ── Previously seeded ─────────────────────────────────────────────────
+            ("KC Nová Cvernovka",  "https://novacvernovka.eu/wp-content/plugins/hk-cvernovka/images/fb-meta-univerzal.jpg"),
+            ("A4",                 "https://a4.sk/wp-content/uploads/2021/04/IMG_5558.jpg"),
+            ("Stará Tržnica",      "https://staratrznica.sk/assets/img/og.jpg"),
             ("T3 Kultúrny Prostriedok", "https://t3.sk/og-image.png"),
-            ("Subdeck",           "https://subdeck.sk/ogimage.png"),
-            ("Mogg",              "https://mogg-bratislava.vercel.app/og-image.jpg"),
+            ("Subdeck",            "https://subdeck.sk/ogimage.png"),
+            ("Mogg",               "https://mogg-bratislava.vercel.app/og-image.jpg"),
+            // ── Kaviarne ──────────────────────────────────────────────────────────
+            ("Blue Mondays",       "https://bluemondays.sk/cdn/shop/collections/olivier-collet-1bRqiHGtPK0-unsplash.jpg?v=1762096009&width=3840"),
+            ("LOT Roastery",       "https://www.lotroastery.com/wp-content/uploads/2025/06/IMG_4192-Edit.webp"),
+            ("Matsu",              "https://www.matsu-matcha.com/wp-content/uploads/2025/08/Rectangle-2527-780x1024.png"),
+            ("Baryk",              "https://img02.restaurantguru.com/cc58-Restaurant-Baryk-food.jpg"),
+            ("Kaviareň Vták",      "https://www.visitbratislava.com/wp-content/uploads/2023/04/Vtak-interier-fb-800x800.jpg"),
+            ("Temný Ost Block",    "https://www.visitbratislava.com/wp-content/uploads/2023/04/Ost-fb-740x800.jpg"),
+            ("Oproti",             "https://www.oproti.sk/wp-content/uploads/2025/11/48f5e61b-99ff-4b8b-8520-b47895f0db54.jpg"),
+            ("Mandľa",             "https://mandlove.com/wp-content/uploads/2021/11/IMG-7076-1200x901.jpg"),
+            // ── Jedlo ─────────────────────────────────────────────────────────────
+            ("Otto!",              "https://images.squarespace-cdn.com/content/v1/5ed792068735f36f2afd13de/83727a70-3f25-4b95-b3b6-5505e85389ab/Otto.7-22_byLousy-1.jpg"),
+            ("Ramen Kazu",         "https://ramenkazu.sk/wp-content/uploads/2026/01/ramen-kazu.webp"),
+            ("Studňa",             "https://img02.restaurantguru.com/c4f3-Studna-umelecky-klub-street-food-craft-beer-a-borovicka-bar-dishes.jpg"),
+            ("Hanoi Garden",       "https://lh3.googleusercontent.com/sitesv/AA5AbUAk9T-3nRFzKF-uawlFsuELGr4JODcRUEOCSp7uJ2UMGiX0deIzxCLlpou3xZsgOUxuw3r9XBlR-Ck9TXGHGqrrr-KC2WbZ2QROMJzJ-UYQrnT844aVrTlBz6xS9WlY42p46uavQ9INRRiyWv8_V2MMMWQF4ynxVFL0vFbMTifs9SCtli_fVLQZkVxadB9pLZQqmLv06upBcdaLiixJOLeVwa-PwVqDrtca=w1280"),
+            ("EjTyTu Streetfood",  "https://www.visitbratislava.com/wp-content/uploads/2024/08/20240828_121430-800x370.jpg"),
+            // ── Hudba ─────────────────────────────────────────────────────────────
+            ("Zrkadlový Háj",      "https://www.petrzalka.sk/uploads/prenajmy/hladisko-velka-sala-dk-zrkadlovy-haj.jpg"),
+            ("Fuga",               "https://fuga.forumabsurdum.sk/wp-content/uploads/624590299_1335960868571477_6799567575291985200_n-360x202.jpg"),
+            ("PinkWhale",          "https://www.visitbratislava.com/wp-content/uploads/2023/06/Pink-whale-z-ich-webu.jpg"),
+            ("Kácéčko",            "https://www.visitbratislava.com/wp-content/uploads/2023/11/fokty_kc_dunaj-21.jpg"),
+            // ── Kultúra ───────────────────────────────────────────────────────────
+            ("SNG",                "https://upload.wikimedia.org/wikipedia/commons/9/98/Slovak_National_Gallery.JPG"),
+            ("SND",                "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Bratyslawa_Teatr_Narodowy.jpg/250px-Bratyslawa_Teatr_Narodowy.jpg"),
+            ("Kino Mladosť",       "https://www.visitbratislava.com/wp-content/uploads/2014/12/ilustracne_foto_cinemax_kinosala-800x533.jpg"),
+            ("GMB",                "https://cdn-api.bratislava.sk/strapi-city-gallery/upload/FSVD_1714_50aeda679b.jpg"),
+            // ── Šport ─────────────────────────────────────────────────────────────
+            ("Skatepark pod Mostom SNP", "https://mib.sk/wp-content/uploads/2024/05/20240525_091151000_iOS-1024x683.jpg"),
+            ("Skatepark Gercenova", "https://cdn.sita.sk/sites/3/2017/11/miniskatepark-1-640x361.jpg"),
+            ("Mudronka",           "https://www.naspark.sk/en/photoloader/638/2.jpg/0x0/_1920x650"),
+            ("Štrkovecké jazero",  "https://upload.wikimedia.org/wikipedia/commons/7/77/Slovakia_Bratislava_Strkovec1.JPG"),
+            ("Bowling Hviezda",    "https://bnc-sk.sk/media/preview/blocks/4c9a8d2eeac88fb625a71204c6bc28a5/image/52bc0eaad79e7824126437933db787a5/huQBoxsLZ1mUwHk6OYk6rRdpq0NvaPmVTndeY9IW.webp?w=2878&h=1924"),
+            ("Športový areál Mladá Garda", "https://garda.sk/wp-content/uploads/2022/03/SportoviskoMG.jpg"),
+            // ── Drinks ────────────────────────────────────────────────────────────
+            ("Café Axioma",        "https://www.visitbratislava.com/wp-content/uploads/2015/05/axioma1-800x533.jpg"),
+            ("Nuda Bar",           "https://images.squarespace-cdn.com/content/v1/64cbbee0f51cff10af4e81a4/e01d2ca1-3cb0-4cfc-a4a7-402ad1d4b52a/DSCF1068.jpg"),
+            ("Viecha malých vinárov", "https://www.visitbratislava.com/wp-content/uploads/2016/05/viecha2-800x407.jpg"),
+            // ── Outdoor ───────────────────────────────────────────────────────────
+            ("Slavín",             "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Monumento_a_Slav%C3%ADn%2C_Bratislava%2C_Eslovaquia%2C_2020-02-01%2C_DD_13.jpg/330px-Monumento_a_Slav%C3%ADn%2C_Bratislava%2C_Eslovaquia%2C_2020-02-01%2C_DD_13.jpg"),
+            ("Partizánska lúka",   "https://www.visitbratislava.com/wp-content/uploads/2015/04/Kovac_BA_Nove-Mesto_Lesopark_Les_Bus_Doprava__nevyhradna-licencia_1920x1280.jpg"),
+            ("Lido / Elýzium",     "https://www.visitbratislava.com/wp-content/uploads/2020/06/Molnar_Dunaj_Magio-pl%C3%A1%C5%BE_BA-hrad_deti_family_vyhradna-licencia-800x584.jpg"),
+            ("Botanická záhrada UK", "https://uniba.sk/typo3temp/pics/jar_BZUK_927697052a.jpg"),
+            ("Prezidentská záhrada", "https://www.prezident.sk/upload-files/pages/xniwjhp3rajxtkprxwybxnckzazqj07lgtctoyph.jpeg"),
+            ("Devínska Kobyla",    "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Devinska_Kobyla_02.jpg/330px-Devinska_Kobyla_02.jpg"),
+            // ── Fashion ───────────────────────────────────────────────────────────
+            ("Textile House Páričkova", "https://textilehouse.sk/wp-content/uploads/2026/04/SK-768x1088.jpg"),
+            ("Vintage shop Františkánske", "https://textilehouse.sk/wp-content/uploads/2018/08/vint.jpg"),
+            ("Buffet Clothing",    "https://www.buffetclothing.com/cdn/shop/files/IMG_8574.jpg?v=1770648376"),
+            ("Slávica local design", "https://www.visitbratislava.com/wp-content/uploads/2015/06/sl%C3%A1vica-2-533x800.jpg"),
+            // ── Craft ─────────────────────────────────────────────────────────────
+            ("Labster",            "https://www.labster.sk/wp-content/uploads/2025/09/webskuska3-768x169.jpg"),
+            ("Foto.sk",            "https://foto.sk/wp-content/uploads/2023/09/4196a-1657x2048-1-829x1024.jpg"),
+            ("Nemeck0",            "https://www.nemeck0.sk/wp-content/uploads/2023/02/DSC00536-750x1000.jpg"),
+            ("Maker Space",        "https://static.wixstatic.com/media/11062b_ec32664ac38e4bbabd76f46838541c64~mv2.jpg/v1/fill/w_288,h_192,al_c,q_80,usm_0.66_1.00_0.01,blur_2,enc_avif,quality_auto/11062b_ec32664ac38e4bbabd76f46838541c64~mv2.jpg"),
+            // ── Knihy ─────────────────────────────────────────────────────────────
+            ("Artforum",           "https://static.artforum.sk/media/homepage/1035_600.jpg"),
+            ("Brot",               "https://brot.sk/cdn/shop/files/Brot_Books_Deli_logo_horizontal_c2e94fc5-34c2-49a4-bf25-47592dde9f58.png?v=1638786944&width=1000"),
         };
         foreach (var (nazov, url) in imageSeeds)
             await conn.ExecuteAsync(
