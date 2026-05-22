@@ -16,7 +16,8 @@ public class CvernovkaScraper(IHttpClientFactory httpFactory, ILogger<CvernovkaS
     public async Task<IReadOnlyList<ScrapedEvent>> ScrapeAsync(CancellationToken ct = default)
     {
         var client = httpFactory.CreateClient();
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; MiestaMy/1.0)");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
         string html;
         try { html = await client.GetStringAsync(ProgramUrl, ct); }
@@ -31,54 +32,34 @@ public class CvernovkaScraper(IHttpClientFactory httpFactory, ILogger<CvernovkaS
 
         var events = new List<ScrapedEvent>();
 
-        // Try multiple selectors — site may use article cards or plain anchors
-        var anchors =
-            doc.DocumentNode.SelectNodes("//a[contains(@href,'/program/') and .//*[self::h1 or self::h2 or self::h3 or self::h4]]")
-            ?? doc.DocumentNode.SelectNodes("//article[.//a[contains(@href,'/program/')]]//a[contains(@href,'/program/')]")
-            ?? doc.DocumentNode.SelectNodes("//a[contains(@href,'/program/')]");
+        // Cvernovka WordPress: each event is an <article data-start="YYYYMMDD" data-href="url">
+        var articles = doc.DocumentNode.SelectNodes("//article[@data-start and @data-href]");
+        if (articles is null)
+        {
+            logger.LogWarning("CvernovkaScraper: no article[@data-start] found — site structure may have changed");
+            return events;
+        }
 
-        if (anchors is null) return events;
-
-        foreach (var anchor in anchors)
+        foreach (var article in articles)
         {
             try
             {
-                var href = anchor.GetAttributeValue("href", "");
-                if (string.IsNullOrEmpty(href)) continue;
-                var sourceUrl = href.StartsWith("http") ? href : BaseUrl + href;
-                // Skip the listing page itself
-                if (sourceUrl.TrimEnd('/') == ProgramUrl.TrimEnd('/')) continue;
+                var sourceUrl = article.GetAttributeValue("data-href", "");
+                if (string.IsNullOrEmpty(sourceUrl)) continue;
+                if (!sourceUrl.StartsWith("http")) sourceUrl = BaseUrl + sourceUrl;
 
-                // Title: first heading inside anchor
-                var titleNode = anchor.SelectSingleNode(".//*[self::h1 or self::h2 or self::h3 or self::h4]");
+                var dataStart = article.GetAttributeValue("data-start", "");
+                var datumOd = ParseDataStart(dataStart);
+                if (datumOd is null) continue;
+
+                var titleNode = article.SelectSingleNode(".//*[contains(@class,'entry-title')]");
                 var title = WebUtility.HtmlDecode(titleNode?.InnerText.Trim() ?? "");
                 if (string.IsNullOrEmpty(title)) continue;
 
-                // Image: handle lazy-loaded images (data-src / data-lazy-src)
-                var imgNode = anchor.SelectSingleNode(".//img");
-                var imgSrc = imgNode?.GetAttributeValue("data-lazy-src", null)
-                    ?? imgNode?.GetAttributeValue("data-src", null)
-                    ?? imgNode?.GetAttributeValue("src", null);
+                var imgNode = article.SelectSingleNode(".//img");
+                var imgSrc = imgNode?.GetAttributeValue("src", null);
                 if (imgSrc != null && !imgSrc.StartsWith("http"))
                     imgSrc = BaseUrl + imgSrc;
-
-                // Date: scan all text nodes in the anchor
-                string? dateRaw = null;
-                foreach (var node in anchor.DescendantsAndSelf())
-                {
-                    if (node.NodeType != HtmlNodeType.Text) continue;
-                    var text = WebUtility.HtmlDecode(node.InnerText).Trim();
-                    if (string.IsNullOrWhiteSpace(text)) continue;
-                    // Date tokens look like "15/05" or "15/05/2026" or "15. 5."
-                    if (System.Text.RegularExpressions.Regex.IsMatch(text, @"\d{1,2}[/\.]\d{1,2}"))
-                    {
-                        dateRaw = text;
-                        break;
-                    }
-                }
-
-                var datumOd = ParseDate(dateRaw);
-                if (datumOd is null) continue;
 
                 events.Add(new ScrapedEvent
                 {
@@ -94,35 +75,23 @@ public class CvernovkaScraper(IHttpClientFactory httpFactory, ILogger<CvernovkaS
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "CvernovkaScraper: error parsing event item");
+                logger.LogWarning(ex, "CvernovkaScraper: error parsing article");
             }
         }
 
-        // Deduplicate by SourceUrl (multiple selectors may match the same anchor)
         events = events.DistinctBy(e => e.SourceUrl).ToList();
-
         logger.LogInformation("CvernovkaScraper: scraped {Count} events", events.Count);
         return events;
     }
 
-    // Parses "15/05 piatok 22:00" → "2026-05-15"
-    private static string? ParseDate(string? raw)
+    // Parses "20260523" → "2026-05-23"
+    private static string? ParseDataStart(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return null;
-        var token = raw.Trim().Split(' ')[0];
-        var parts = token.Split('/');
-        if (parts.Length != 2) return null;
-        if (!int.TryParse(parts[0], out var day)) return null;
-        if (!int.TryParse(parts[1], out var month)) return null;
-        if (day < 1 || day > 31 || month < 1 || month > 12) return null;
-
-        var year = DateTime.Today.Year;
-        try
-        {
-            var date = new DateTime(year, month, day);
-            if (date < DateTime.Today.AddDays(-30)) date = date.AddYears(1);
-            return date.ToString("yyyy-MM-dd");
-        }
+        if (string.IsNullOrWhiteSpace(raw) || raw.Length != 8) return null;
+        if (!int.TryParse(raw[..4], out var year)) return null;
+        if (!int.TryParse(raw[4..6], out var month)) return null;
+        if (!int.TryParse(raw[6..8], out var day)) return null;
+        try { return new DateTime(year, month, day).ToString("yyyy-MM-dd"); }
         catch { return null; }
     }
 }
