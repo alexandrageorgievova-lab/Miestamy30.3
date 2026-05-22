@@ -88,7 +88,7 @@ public class StaraTrznicaScraper(IHttpClientFactory httpFactory, ILogger<StaraTr
             string? popis = null;
             try
             {
-                await Task.Delay(200, ct);
+                await Task.Delay(500, ct);
                 var detailHtml = await client.GetStringAsync(sourceUrl, ct);
                 var detailDoc = new HtmlDocument();
                 detailDoc.LoadHtml(detailHtml);
