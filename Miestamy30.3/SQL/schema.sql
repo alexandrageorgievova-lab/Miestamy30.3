@@ -25,13 +25,14 @@ CREATE TABLE IF NOT EXISTS Filter (
 -- 3. Miesto
 --    Konkrétne miesto v Bratislave
 CREATE TABLE IF NOT EXISTS Miesto (
-    Id     INTEGER PRIMARY KEY AUTOINCREMENT,
-    Nazov  TEXT NOT NULL UNIQUE,  -- názov musí byť unikátny a neprázdny
-    Adresa TEXT,
-    Lat    REAL,  -- zemepisná šírka
-    Lng    REAL,  -- zemepisná dĺžka
-    Popis  TEXT,
-    WebUrl TEXT
+    Id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    Nazov    TEXT NOT NULL UNIQUE,  -- názov musí byť unikátny a neprázdny
+    Adresa   TEXT,
+    Lat      REAL,  -- zemepisná šírka
+    Lng      REAL,  -- zemepisná dĺžka
+    Popis    TEXT,
+    WebUrl   TEXT,
+    ImageUrl TEXT
 );
 
 -- 4. MiestoKategoria  (M:N – Miesto ↔ Kategória)

@@ -21,12 +21,29 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         {
             await conn.ExecuteAsync("ALTER TABLE Podujatie ADD COLUMN IF NOT EXISTS ImageUrl TEXT");
             await conn.ExecuteAsync("ALTER TABLE Podujatie ADD COLUMN IF NOT EXISTS SourceUrl TEXT");
+            await conn.ExecuteAsync("ALTER TABLE Miesto ADD COLUMN IF NOT EXISTS ImageUrl TEXT");
         }
         else
         {
             try { await conn.ExecuteAsync("ALTER TABLE Podujatie ADD COLUMN ImageUrl TEXT"); } catch { }
             try { await conn.ExecuteAsync("ALTER TABLE Podujatie ADD COLUMN SourceUrl TEXT"); } catch { }
+            try { await conn.ExecuteAsync("ALTER TABLE Miesto ADD COLUMN ImageUrl TEXT"); } catch { }
         }
+
+        // Seed image URLs for known venues (idempotent — only sets where still NULL)
+        var imageSeeds = new[]
+        {
+            ("KC Nová Cvernovka", "https://novacvernovka.eu/wp-content/plugins/hk-cvernovka/images/fb-meta-univerzal.jpg"),
+            ("A4",                "https://a4.sk/wp-content/uploads/2021/04/IMG_5558.jpg"),
+            ("Stará Tržnica",     "https://staratrznica.sk/assets/img/og.jpg"),
+            ("T3 Kultúrny Prostriedok", "https://t3.sk/og-image.png"),
+            ("Subdeck",           "https://subdeck.sk/ogimage.png"),
+            ("Mogg",              "https://mogg-bratislava.vercel.app/og-image.jpg"),
+        };
+        foreach (var (nazov, url) in imageSeeds)
+            await conn.ExecuteAsync(
+                "UPDATE Miesto SET ImageUrl = @Url WHERE Nazov = @Nazov AND ImageUrl IS NULL",
+                new { Url = url, Nazov = nazov });
     }
 
     private bool IsPostgres() => factory.IsPostgres;

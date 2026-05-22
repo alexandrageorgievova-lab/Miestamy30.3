@@ -870,7 +870,7 @@ async function showDetail(id) {
   const detail = await get(`/miesta/${id}/detail`);
   document.getElementById('detail-label').textContent = detail.nazov;
   document.getElementById('detail-back-label').textContent = currentKat ? currentKat.nazov : 'Späť';
-  setDetailImage(null);
+  setDetailImage(detail.imageUrl || null);
   const sections = Object.entries(detail.filtre || {}).map(([kat, filtre]) => `
     <div class="detail-filter-group">
       <div class="detail-filter-kat">${kat}</div>

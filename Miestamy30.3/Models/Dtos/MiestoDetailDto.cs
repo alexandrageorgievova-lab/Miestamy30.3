@@ -9,6 +9,7 @@ public class MiestoDetailDto
     public double? Lng { get; set; }
     public string? Popis { get; set; }
     public string? WebUrl { get; set; }
+    public string? ImageUrl { get; set; }
     public List<string> Kategorie { get; set; } = [];
     public Dictionary<string, List<string>> Filtre { get; set; } = [];
 }

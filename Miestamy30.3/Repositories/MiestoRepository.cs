@@ -14,10 +14,10 @@ public class MiestoRepository(DbConnectionFactory factory) : IMiestoRepository
     {
         using var conn = factory.Create();
         var sql = factory.IsPostgres
-            ? @"INSERT INTO Miesto (Nazov, Adresa, Lat, Lng, Popis, WebUrl)
-                VALUES (@Nazov, @Adresa, @Lat, @Lng, @Popis, @WebUrl) RETURNING Id"
-            : @"INSERT INTO Miesto (Nazov, Adresa, Lat, Lng, Popis, WebUrl)
-                VALUES (@Nazov, @Adresa, @Lat, @Lng, @Popis, @WebUrl);
+            ? @"INSERT INTO Miesto (Nazov, Adresa, Lat, Lng, Popis, WebUrl, ImageUrl)
+                VALUES (@Nazov, @Adresa, @Lat, @Lng, @Popis, @WebUrl, @ImageUrl) RETURNING Id"
+            : @"INSERT INTO Miesto (Nazov, Adresa, Lat, Lng, Popis, WebUrl, ImageUrl)
+                VALUES (@Nazov, @Adresa, @Lat, @Lng, @Popis, @WebUrl, @ImageUrl);
                 SELECT last_insert_rowid();";
         return await conn.ExecuteScalarAsync<int>(sql, miesto);
     }
@@ -26,14 +26,14 @@ public class MiestoRepository(DbConnectionFactory factory) : IMiestoRepository
     {
         using var conn = factory.Create();
         return await conn.QueryAsync<Miesto>(
-            "SELECT Id, Nazov, Adresa, Lat, Lng, Popis, WebUrl FROM Miesto ORDER BY Nazov");
+            "SELECT Id, Nazov, Adresa, Lat, Lng, Popis, WebUrl, ImageUrl FROM Miesto ORDER BY Nazov");
     }
 
     public async Task<Miesto?> GetById(int id)
     {
         using var conn = factory.Create();
         return await conn.QuerySingleOrDefaultAsync<Miesto>(
-            "SELECT Id, Nazov, Adresa, Lat, Lng, Popis, WebUrl FROM Miesto WHERE Id = @Id",
+            "SELECT Id, Nazov, Adresa, Lat, Lng, Popis, WebUrl, ImageUrl FROM Miesto WHERE Id = @Id",
             new { Id = id });
     }
 
@@ -43,7 +43,7 @@ public class MiestoRepository(DbConnectionFactory factory) : IMiestoRepository
         await conn.ExecuteAsync(@"
             UPDATE Miesto
             SET Nazov = @Nazov, Adresa = @Adresa, Lat = @Lat, Lng = @Lng,
-                Popis = @Popis, WebUrl = @WebUrl
+                Popis = @Popis, WebUrl = @WebUrl, ImageUrl = @ImageUrl
             WHERE Id = @Id",
             miesto);
     }
@@ -119,15 +119,16 @@ public class MiestoRepository(DbConnectionFactory factory) : IMiestoRepository
 
         return new MiestoDetailDto
         {
-            Id      = miesto.Id,
-            Nazov   = miesto.Nazov,
-            Adresa  = miesto.Adresa,
-            Lat     = miesto.Lat,
-            Lng     = miesto.Lng,
-            Popis   = miesto.Popis,
-            WebUrl  = miesto.WebUrl,
+            Id       = miesto.Id,
+            Nazov    = miesto.Nazov,
+            Adresa   = miesto.Adresa,
+            Lat      = miesto.Lat,
+            Lng      = miesto.Lng,
+            Popis    = miesto.Popis,
+            WebUrl   = miesto.WebUrl,
+            ImageUrl = miesto.ImageUrl,
             Kategorie = kategorie.Select(k => k.Nazov).ToList(),
-            Filtre  = filtre,
+            Filtre   = filtre,
         };
     }
 
