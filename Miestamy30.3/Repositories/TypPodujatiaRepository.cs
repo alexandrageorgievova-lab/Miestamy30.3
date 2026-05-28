@@ -40,4 +40,17 @@ public class TypPodujatiaRepository(DbConnectionFactory factory) : ITypPodujatia
         using var conn = factory.Create();
         await conn.ExecuteAsync("DELETE FROM TypPodujatia WHERE Id = @Id", new { Id = id });
     }
+
+    public async Task<IEnumerable<string>> GetActiveTypNames()
+    {
+        using var conn = factory.Create();
+        return await conn.QueryAsync<string>(@"
+            SELECT DISTINCT t.Nazov
+            FROM TypPodujatia t
+            INNER JOIN PodujatieTyp pt ON t.Id = pt.TypId
+            INNER JOIN Podujatie     p  ON pt.PodujatieId = p.Id
+            WHERE p.DatumOd >= @Today
+            ORDER BY t.Nazov",
+            new { Today = DateTime.Today.ToString("yyyy-MM-dd") });
+    }
 }

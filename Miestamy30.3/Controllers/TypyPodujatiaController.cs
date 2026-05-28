@@ -11,6 +11,9 @@ public class TypyPodujatiaController(ITypPodujatiaRepository repo) : ControllerB
     [HttpGet]
     public async Task<IActionResult> GetAll() => Ok(await repo.GetAll());
 
+    [HttpGet("active")]
+    public async Task<IActionResult> GetActive() => Ok(await repo.GetActiveTypNames());
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {

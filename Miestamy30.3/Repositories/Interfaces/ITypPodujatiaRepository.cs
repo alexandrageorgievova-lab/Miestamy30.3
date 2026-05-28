@@ -9,4 +9,5 @@ public interface ITypPodujatiaRepository
     Task<TypPodujatia?> GetById(int id);
     Task Update(TypPodujatia typ);
     Task Delete(int id);
+    Task<IEnumerable<string>> GetActiveTypNames();
 }
