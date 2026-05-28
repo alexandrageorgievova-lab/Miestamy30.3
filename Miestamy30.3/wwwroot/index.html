@@ -43,22 +43,22 @@
     .logo-dots { display: flex; align-items: center; gap: 5px; }
     .logo-dot-lg { width: 18px; height: 18px; background: var(--orange); border-radius: 50%; }
     .logo-dot-sm { width: 11px; height: 11px; background: var(--orange); border-radius: 50%; }
-    .logo-text { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 26px; color: var(--orange); letter-spacing: -0.5px; line-height: 1; }
+    .logo-text { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 26px; color: var(--white); letter-spacing: -0.5px; line-height: 1; }
 
     nav { display: flex; align-items: center; gap: 10px; }
     nav a {
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       font-size: 17px;
-      color: var(--orange);
+      color: var(--white);
       text-decoration: none;
       cursor: pointer;
       padding-bottom: 3px;
       border-bottom: 2.5px solid transparent;
       transition: opacity 0.15s, border-color 0.15s;
     }
-    nav a.active { border-bottom-color: var(--orange); }
+    nav a.active { border-bottom-color: var(--white); }
     nav a:not(.active) { opacity: 0.45; }
-    nav .sep { color: var(--orange); opacity: 0.4; font-size: 17px; }
+    nav .sep { color: var(--white); opacity: 0.4; font-size: 17px; }
 
     /* ── Layout ─────────────────────────────────────────────────────────── */
     main { display: flex; height: calc(100vh - 60px); }
@@ -73,7 +73,7 @@
     #sidebar {
       width: 340px;
       flex-shrink: 0;
-      background: var(--salmon);
+      background: var(--navy);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -90,13 +90,13 @@
       font-size: 11px;
       letter-spacing: 1.8px;
       text-transform: uppercase;
-      color: var(--navy);
+      color: var(--white);
       opacity: 0.5;
-      border-bottom: 1.5px solid rgba(32,41,120,0.12);
+      border-bottom: 1.5px solid rgba(255,255,255,0.1);
     }
     #cat-list { flex: 1; overflow-y: auto; }
     #cat-list::-webkit-scrollbar { width: 4px; }
-    #cat-list::-webkit-scrollbar-thumb { background: rgba(32,41,120,0.2); border-radius: 2px; }
+    #cat-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 
     .cat-item {
       display: flex;
@@ -104,36 +104,36 @@
       justify-content: space-between;
       padding: 13px 22px;
       cursor: pointer;
-      border-bottom: 1.5px solid rgba(32,41,120,0.08);
+      border-bottom: 1.5px solid rgba(255,255,255,0.07);
       transition: background 0.15s;
     }
-    .cat-item:hover  { background: rgba(32,41,120,0.07); }
-    .cat-item.active { background: rgba(32,41,120,0.12); }
-    .cat-item.cat-empty { opacity: 0.45; }
-    .cat-item.cat-empty:hover { background: rgba(32,41,120,0.04); }
+    .cat-item:hover  { background: rgba(255,255,255,0.07); }
+    .cat-item.active { background: rgba(255,255,255,0.12); }
+    .cat-item.cat-empty { opacity: 0.35; }
+    .cat-item.cat-empty:hover { background: rgba(255,255,255,0.04); }
     .empty-badge {
       font-size: 13px;
-      color: #999;
+      color: rgba(255,255,255,0.4);
       font-weight: 400;
     }
     .empty-divider {
       padding: 10px 22px 6px;
       font-size: 12px;
-      color: #aaa;
+      color: rgba(255,255,255,0.35);
       text-transform: uppercase;
       letter-spacing: 0.07em;
-      border-top: 1.5px solid rgba(32,41,120,0.08);
+      border-top: 1.5px solid rgba(255,255,255,0.07);
       margin-top: 6px;
     }
     .cat-name {
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       font-size: 21px;
-      color: var(--navy);
+      color: var(--white);
     }
     .cat-icon-wrap {
       width: 36px; height: 36px;
       display: flex; align-items: center; justify-content: center;
-      color: var(--navy);
+      color: var(--white);
       flex-shrink: 0;
     }
     .cat-icon-wrap svg { width: 30px; height: 30px; }
@@ -145,42 +145,42 @@
       gap: 10px;
       padding: 14px 22px;
       cursor: pointer;
-      border-bottom: 1.5px solid rgba(32,41,120,0.1);
-      color: rgba(32,41,120,0.55);
+      border-bottom: 1.5px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.5);
       font-size: 13px;
       font-weight: 500;
       transition: color 0.15s;
     }
-    .panel-back:hover { color: var(--navy); }
+    .panel-back:hover { color: var(--white); }
     .panel-back-arrow { font-size: 16px; }
 
     .panel-title {
       padding: 16px 22px 8px;
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       font-size: 28px;
-      color: var(--navy);
+      color: var(--white);
       line-height: 1.1;
     }
-    .filter-count { padding: 0 22px 10px; font-size: 12px; color: rgba(32,41,120,0.5); font-weight: 500; }
+    .filter-count { padding: 0 22px 10px; font-size: 12px; color: rgba(255,255,255,0.45); font-weight: 500; }
 
     #filter-chips { padding: 0 18px 12px; display: flex; flex-wrap: wrap; gap: 7px; }
     .chip {
       padding: 5px 13px;
       border-radius: 20px;
-      border: 2px solid rgba(32,41,120,0.28);
-      color: rgba(32,41,120,0.7);
+      border: 2px solid rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.65);
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
       user-select: none;
     }
-    .chip:hover  { border-color: var(--navy); color: var(--navy); }
-    .chip.active { background: var(--navy); border-color: var(--navy); color: var(--white); }
+    .chip:hover  { border-color: var(--white); color: var(--white); }
+    .chip.active { background: var(--orange); border-color: var(--orange); color: var(--white); }
 
     #place-list { flex: 1; overflow-y: auto; padding: 6px 0; }
     #place-list::-webkit-scrollbar { width: 4px; }
-    #place-list::-webkit-scrollbar-thumb { background: rgba(32,41,120,0.2); border-radius: 2px; }
+    #place-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 
     .place-row {
       display: flex;
@@ -188,24 +188,24 @@
       gap: 12px;
       padding: 10px 22px;
       cursor: pointer;
-      border-bottom: 1px solid rgba(32,41,120,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
       transition: background 0.12s;
     }
-    .place-row:hover  { background: rgba(32,41,120,0.06); }
-    .place-row.active { background: rgba(32,41,120,0.1); }
+    .place-row:hover  { background: rgba(255,255,255,0.06); }
+    .place-row.active { background: rgba(255,255,255,0.1); }
     .place-num {
       width: 28px; height: 28px;
       background: transparent;
-      border: 2px solid var(--navy);
+      border: 2px solid rgba(255,255,255,0.35);
       border-radius: 6px;
       display: flex; align-items: center; justify-content: center;
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       font-size: 12px;
-      color: var(--navy);
+      color: rgba(255,255,255,0.7);
       flex-shrink: 0;
     }
-    .place-row-name { font-size: 14px; font-weight: 700; color: var(--navy); }
-    .place-row-sub  { font-size: 11px; color: rgba(32,41,120,0.5); margin-top: 1px; }
+    .place-row-name { font-size: 14px; font-weight: 700; color: var(--white); }
+    .place-row-sub  { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 1px; }
 
     /* ── Detail side panel ───────────────────────────────────────────────── */
     #detail-panel {
@@ -213,7 +213,7 @@
       flex-shrink: 0;
       overflow: hidden;
       transition: width 0.32s cubic-bezier(0.4,0,0.2,1);
-      background: rgba(245,126,101,0.92);
+      background: rgba(255,75,0,0.92);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       display: flex;
@@ -236,14 +236,14 @@
       gap: 10px;
       padding: 14px 20px;
       cursor: pointer;
-      border-bottom: 1.5px solid rgba(32,41,120,0.12);
-      color: rgba(32,41,120,0.6);
+      border-bottom: 1.5px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.65);
       font-size: 16px;
       font-weight: 500;
       transition: color 0.15s;
       flex-shrink: 0;
     }
-    .detail-close:hover { color: var(--navy); }
+    .detail-close:hover { color: var(--white); }
 
     .detail-img {
       height: 160px;
@@ -284,43 +284,43 @@
 
     .detail-body { flex: 1; overflow-y: auto; padding: 18px 20px; }
     .detail-body::-webkit-scrollbar { width: 4px; }
-    .detail-body::-webkit-scrollbar-thumb { background: rgba(32,41,120,0.2); border-radius: 2px; }
+    .detail-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
 
-    .detail-name { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 26px; color: var(--navy); line-height: 1.15; margin-bottom: 6px; }
-    .detail-addr { font-size: 13px; color: rgba(32,41,120,0.6); margin-bottom: 14px; font-weight: 500; }
-    .detail-dates { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 14px; }
+    .detail-name { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 26px; color: var(--white); line-height: 1.15; margin-bottom: 6px; }
+    .detail-addr { font-size: 13px; color: rgba(255,255,255,0.65); margin-bottom: 14px; font-weight: 500; }
+    .detail-dates { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--white); margin-bottom: 14px; }
     .detail-cats  { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
 
     .cat-badge {
       padding: 4px 11px;
-      background: rgba(32,41,120,0.12);
-      border: 1.5px solid rgba(32,41,120,0.28);
+      background: rgba(255,255,255,0.15);
+      border: 1.5px solid rgba(255,255,255,0.3);
       border-radius: 12px;
-      font-size: 11px; font-weight: 700; color: var(--navy);
+      font-size: 11px; font-weight: 700; color: var(--white);
     }
     .event-badge {
       padding: 4px 11px;
-      background: var(--navy);
+      background: rgba(255,255,255,0.2);
       border-radius: 12px;
-      font-size: 11px; font-weight: 700; color: var(--salmon);
+      font-size: 11px; font-weight: 700; color: var(--white);
     }
 
     .detail-section-title {
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       font-size: 10px; letter-spacing: 1.2px;
       text-transform: uppercase;
-      color: rgba(32,41,120,0.45);
+      color: rgba(255,255,255,0.5);
       margin-bottom: 8px; margin-top: 16px;
     }
     .detail-filter-group  { margin-bottom: 10px; }
-    .detail-filter-kat    { font-size: 10px; font-weight: 700; color: rgba(32,41,120,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+    .detail-filter-kat    { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
     .detail-filter-chips  { display: flex; flex-wrap: wrap; gap: 5px; }
     .detail-chip {
       padding: 3px 10px;
-      background: rgba(32,41,120,0.1);
+      background: rgba(255,255,255,0.15);
       border-radius: 10px;
       font-size: 11px; font-weight: 500;
-      color: rgba(32,41,120,0.8);
+      color: rgba(255,255,255,0.85);
     }
 
     /* ── Map markers ─────────────────────────────────────────────────────── */
@@ -335,7 +335,7 @@
     /* ── Loading ─────────────────────────────────────────────────────────── */
     .loading {
       display: flex; align-items: center; justify-content: center;
-      padding: 32px 20px; color: rgba(32,41,120,0.4); font-size: 13px;
+      padding: 32px 20px; color: rgba(255,255,255,0.35); font-size: 13px;
     }
 
     /* ── Mobile ──────────────────────────────────────────────────────────── */
@@ -1015,7 +1015,7 @@ async function showEventDetail(id) {
     ${detail.miestoNazov ? `<div class="detail-addr" style="margin-top:-10px">🏠 ${detail.miestoNazov}</div>` : ''}
     ${typy       ? `<div class="detail-cats">${typy}</div>` : ''}
     ${filtrChips ? `<div class="detail-section-title">Filtre</div><div class="detail-filter-chips" style="margin-bottom:8px">${filtrChips}</div>` : ''}
-    ${detail.popis ? `<div class="detail-section-title">O podujatí</div><p style="font-size:13px;color:rgba(32,41,120,0.75);line-height:1.6">${detail.popis}</p>` : ''}
+    ${detail.popis ? `<div class="detail-section-title">O podujatí</div><p style="font-size:13px;color:rgba(255,255,255,0.8);line-height:1.6">${detail.popis}</p>` : ''}
     ${detail.sourceUrl ? `<div style="margin-top:14px"><a href="${detail.sourceUrl}" target="_blank" style="font-size:12px;color:var(--orange);text-decoration:none;font-weight:600">→ Viac info</a></div>` : ''}`;
   openDetailPanel();
 }
