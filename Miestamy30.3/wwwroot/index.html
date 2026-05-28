@@ -730,26 +730,24 @@ function fitMarkers() {
 }
 
 function focusMarker(id) {
-  // Reset previously active marker icon
-  if (activeMarkerId !== null && currentMarkers[activeMarkerId]) {
-    const prev = currentMarkers[activeMarkerId];
-    prev.setIcon(makeMarkerIcon(prev._iconName, prev._type, false));
-  }
+  // Remove previous highlight
+  if (focusedMarker) { map.removeLayer(focusedMarker); focusedMarker = null; }
   activeMarkerId = id;
-  // Highlight selected marker — cluster group stays on map, spiral stays visible
   const m = currentMarkers[id];
-  if (m) m.setIcon(makeMarkerIcon(m._iconName, m._type, true));
+  if (!m) return;
+  // Add highlighted marker directly on map — cluster group is NEVER touched,
+  // so the spiral stays fully visible and clickable
+  focusedMarker = L.marker(m.getLatLng(), {
+    icon: makeMarkerIcon(m._iconName, m._type, true),
+    zIndexOffset: 1000,
+    interactive: false
+  }).addTo(map);
 }
 
 function restoreMarkers() {
   if (focusedMarker) { map.removeLayer(focusedMarker); focusedMarker = null; }
-  // Reset active marker icon
-  if (activeMarkerId !== null && currentMarkers[activeMarkerId]) {
-    const m = currentMarkers[activeMarkerId];
-    m.setIcon(makeMarkerIcon(m._iconName, m._type, false));
-  }
   activeMarkerId = null;
-  // Cluster group stays on map — no zoom change
+  // Cluster group untouched — spiral stays as is, no zoom change
 }
 
 // ── Detail panel open/close ──────────────────────────────────────────────────
