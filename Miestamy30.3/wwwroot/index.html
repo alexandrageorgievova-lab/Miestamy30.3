@@ -109,6 +109,22 @@
     }
     .cat-item:hover  { background: rgba(32,41,120,0.07); }
     .cat-item.active { background: rgba(32,41,120,0.12); }
+    .cat-item.cat-empty { opacity: 0.45; }
+    .cat-item.cat-empty:hover { background: rgba(32,41,120,0.04); }
+    .empty-badge {
+      font-size: 13px;
+      color: #999;
+      font-weight: 400;
+    }
+    .empty-divider {
+      padding: 10px 22px 6px;
+      font-size: 12px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      border-top: 1.5px solid rgba(32,41,120,0.08);
+      margin-top: 6px;
+    }
     .cat-name {
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       font-size: 21px;
@@ -735,7 +751,7 @@ function restoreMarkers() {
       m.addTo(map);
     });
   }
-  fitMarkers();
+  // Intentionally no fitMarkers() — map stays at current position when closing detail
 }
 
 // ── Detail panel open/close ──────────────────────────────────────────────────
@@ -899,13 +915,24 @@ function goBack() {
 
 // ── PODUJATIA mode ───────────────────────────────────────────────────────────
 async function loadTypy() {
-  const list = await get('/typypodujatia');
-  document.getElementById('cat-list').innerHTML = list.map(t => `
-    <div class="cat-item" data-id="${t.id}" data-nazov="${t.nazov}"
+  const [list, podujatia] = await Promise.all([
+    get('/typypodujatia'),
+    get('/podujatia')
+  ]);
+  const activeTypy = new Set(podujatia.map(p => p.typNazov).filter(Boolean));
+  const withEvents = list.filter(t => activeTypy.has(t.nazov));
+  const empty     = list.filter(t => !activeTypy.has(t.nazov));
+
+  const renderTyp = (t, isEmpty) => `
+    <div class="cat-item${isEmpty ? ' cat-empty' : ''}" data-id="${t.id}" data-nazov="${t.nazov}"
          onclick="selectTyp(${t.id},'${esc(t.nazov)}')">
-      <span class="cat-name">${t.nazov}</span>
-      <span class="cat-icon-wrap">${(ICONS[t.nazov] || ICONS['_event'])('#202978')}</span>
-    </div>`).join('');
+      <span class="cat-name">${t.nazov}${isEmpty ? ' <span class="empty-badge">0</span>' : ''}</span>
+      <span class="cat-icon-wrap">${(ICONS[t.nazov] || ICONS['_event'])(isEmpty ? '#aaa' : '#202978')}</span>
+    </div>`;
+
+  document.getElementById('cat-list').innerHTML =
+    withEvents.map(t => renderTyp(t, false)).join('') +
+    (empty.length ? `<div class="empty-divider">Momentálne bez eventov</div>` + empty.map(t => renderTyp(t, true)).join('') : '');
 }
 
 async function loadAllPodujatia() {

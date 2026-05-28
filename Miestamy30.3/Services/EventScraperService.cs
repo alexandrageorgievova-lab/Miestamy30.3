@@ -64,13 +64,13 @@ public class EventScraperService(
                 continue;
             }
 
-            var cutoff = DateTime.Today.AddDays(21);
+            var cutoff = DateTime.Today.AddDays(14);
 
             foreach (var ev in scraped)
             {
                 if (string.IsNullOrEmpty(ev.SourceUrl)) continue;
 
-                // Skip events more than 3 weeks away
+                // Skip events more than 2 weeks away
                 if (DateTime.TryParse(ev.DatumOd, out var evDate) && evDate > cutoff) continue;
 
                 var exists = await conn.ExecuteScalarAsync<int>(
