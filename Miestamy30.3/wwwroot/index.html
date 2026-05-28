@@ -607,7 +607,8 @@ function getIcon(name, mode) {
 // ── State ───────────────────────────────────────────────────────────────────
 let map;
 let clusterGroup = null;
-let focusedMarker = null;   // single marker shown during detail view
+let focusedMarker = null;
+let activeMarkerId = null;  // id of currently highlighted marker
 let mode = 'miesta';
 let currentMarkers = {};    // id → L.marker (kept off-map while in cluster group)
 let currentKat = null;
@@ -694,9 +695,9 @@ function makeClusterGroup() {
 }
 
 function clearMarkers() {
+  activeMarkerId = null;
   if (focusedMarker) { map.removeLayer(focusedMarker); focusedMarker = null; }
   if (clusterGroup)  { map.removeLayer(clusterGroup); clusterGroup = null; }
-  // fallback: direct markers
   Object.values(currentMarkers).forEach(m => { try { map.removeLayer(m); } catch(_){} });
   currentMarkers = {};
 }
@@ -729,29 +730,26 @@ function fitMarkers() {
 }
 
 function focusMarker(id) {
-  // Hide cluster group, show only the selected marker directly on map
-  if (clusterGroup) map.removeLayer(clusterGroup);
-  if (focusedMarker) { map.removeLayer(focusedMarker); focusedMarker = null; }
-
+  // Reset previously active marker icon
+  if (activeMarkerId !== null && currentMarkers[activeMarkerId]) {
+    const prev = currentMarkers[activeMarkerId];
+    prev.setIcon(makeMarkerIcon(prev._iconName, prev._type, false));
+  }
+  activeMarkerId = id;
+  // Highlight selected marker — cluster group stays on map, spiral stays visible
   const m = currentMarkers[id];
-  if (!m) return;
-  focusedMarker = L.marker(m.getLatLng(), {
-    icon: makeMarkerIcon(m._iconName, m._type, true)
-  }).addTo(map);
-  map.setView(m.getLatLng(), 16, { animate: true });
+  if (m) m.setIcon(makeMarkerIcon(m._iconName, m._type, true));
 }
 
 function restoreMarkers() {
   if (focusedMarker) { map.removeLayer(focusedMarker); focusedMarker = null; }
-  if (clusterGroup) {
-    map.addLayer(clusterGroup);
-  } else {
-    Object.values(currentMarkers).forEach(m => {
-      m.setIcon(makeMarkerIcon(m._iconName, m._type, false));
-      m.addTo(map);
-    });
+  // Reset active marker icon
+  if (activeMarkerId !== null && currentMarkers[activeMarkerId]) {
+    const m = currentMarkers[activeMarkerId];
+    m.setIcon(makeMarkerIcon(m._iconName, m._type, false));
   }
-  // Intentionally no fitMarkers() — map stays at current position when closing detail
+  activeMarkerId = null;
+  // Cluster group stays on map — no zoom change
 }
 
 // ── Detail panel open/close ──────────────────────────────────────────────────
