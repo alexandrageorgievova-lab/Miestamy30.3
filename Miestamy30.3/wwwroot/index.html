@@ -340,9 +340,94 @@
 
     /* ── Mobile ──────────────────────────────────────────────────────────── */
     @media (max-width: 768px) {
-      main { flex-direction: column; }
-      #map { height: 55vh; }
-      #sidebar { width: 100%; height: 45vh; }
+      /* Smaller header */
+      header { height: 52px; padding: 0 16px; }
+      .logo-dot-lg { width: 14px; height: 14px; }
+      .logo-dot-sm { width: 9px;  height: 9px; }
+      .logo-text { font-size: 20px; }
+      nav a { font-size: 14px; }
+      nav .sep { font-size: 14px; }
+
+      /* Main: relative container so map + sheet can overlap */
+      main {
+        display: block;
+        position: relative;
+        height: calc(100vh - 52px);
+        overflow: hidden;
+      }
+
+      /* Map fills full area */
+      #map {
+        position: absolute;
+        inset: 0;
+        height: 100%;
+        z-index: 1;
+      }
+
+      /* ── Bottom sheet sidebar ─────────────────────────────────────────── */
+      #sidebar {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        width: 100%;
+        max-height: 52vh;
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -6px 32px rgba(0,0,0,0.45);
+        z-index: 400;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* Drag handle */
+      #sidebar::before {
+        content: '';
+        display: block;
+        flex-shrink: 0;
+        width: 36px; height: 4px;
+        background: rgba(255,255,255,0.18);
+        border-radius: 2px;
+        margin: 10px auto 0;
+      }
+
+      /* Hide "Kategórie" label — obvious on mobile */
+      #cat-header { display: none; }
+
+      /* Give space for handle in list */
+      #cat-list { padding-top: 6px; }
+
+      .cat-item { padding: 12px 20px; }
+      .cat-name { font-size: 18px; }
+      .cat-icon-wrap { width: 30px; height: 30px; }
+      .cat-icon-wrap svg { width: 24px; height: 24px; }
+
+      /* Filter/list panel spacing */
+      .panel-back  { padding: 12px 16px; }
+      .panel-title { padding: 10px 16px 6px; font-size: 22px; }
+      .filter-count { padding: 0 16px 8px; }
+      #filter-chips { padding: 0 14px 10px; }
+      #place-list { padding: 4px 0; }
+      .place-row  { padding: 11px 16px; }
+
+      /* ── Detail panel: full-screen slide-up overlay ───────────────────── */
+      #detail-panel {
+        position: absolute !important;
+        top: 0 !important; left: 0 !important; right: 0 !important;
+        width: 100% !important;
+        height: 0 !important;
+        transition: height 0.35s cubic-bezier(0.4,0,0.2,1) !important;
+        border-left: none !important;
+        border-radius: 0 !important;
+        z-index: 600;
+      }
+      #detail-panel.open {
+        height: 100% !important;
+      }
+      .detail-inner {
+        width: 100% !important;
+      }
+      .detail-img { height: 210px; }
+      .detail-body { padding: 16px 18px; }
+      .detail-name { font-size: 24px; }
     }
   </style>
 </head>
