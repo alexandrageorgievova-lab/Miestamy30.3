@@ -977,6 +977,7 @@ async function showDetail(id) {
     <div class="detail-name">${detail.nazov}</div>
     ${detail.adresa ? `<div class="detail-addr">📍 ${detail.adresa}</div>` : ''}
     <div class="detail-cats">${(detail.kategorie || []).map(k => `<span class="cat-badge">${k}</span>`).join('')}</div>
+    ${detail.popis ? `<p style="font-size:13px;color:rgba(255,255,255,0.8);line-height:1.6;margin:8px 0 12px">${detail.popis}</p>` : ''}
     ${sections ? `<div class="detail-section-title">Filtre</div>${sections}` : ''}`;
   openDetailPanel();
 }
