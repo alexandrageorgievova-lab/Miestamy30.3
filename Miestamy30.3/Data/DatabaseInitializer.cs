@@ -323,13 +323,13 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         }
 
         // ── Kaviarne ────────────────────────────────────────────────────────────
-        var ciary = await AddMiesto("Čiary", "Námestie SNP, Bratislava", 48.14389920, 17.11077902);
+        var ciary = await AddMiesto("Čiary", "Námestie SNP, Bratislava", 48.14389920, 17.11077902, "Čiary, názov kaviarne je predmetom nevhodných vtipov, no vtipom naozaj nie je výborná káva — batch, coldbrew, acídne aj horké shoty. Vďaka terase vo vnútrobloku je to parádne miesto, kam sa dá cez leto schovať pred slnkom. Pravidelne tu mávajú kávu od malých pražiarní z celej Európy a naložené koláče.");
         await LinkKat(ciary, "Kaviarne");
         await LinkKat(ciary, "Drinks", false);
         await LinkFil(ciary, "Kaviarne", "Speciality coffee", "Vegan options", "Terasa", "Terasa nefajčiarska", "Platba kartou", "Koláče", "Matcha");
         await LinkFil(ciary, "Drinks", "Víno", "Terasa", "Platba kartou");
 
-        var blueMondays = await AddMiesto("Blue Mondays", "Obchodná, Bratislava", 48.14458733, 17.11557950);
+        var blueMondays = await AddMiesto("Blue Mondays", "Obchodná, Bratislava", 48.14458733, 17.11557950, "Máte radi OG hip hop, či DnB? Táto speciality kaviareň je potom pre vás — starý Eminem či Tupac sú tu on repeat. Okrem skvelej ponuky káv a matche je Blue super spot aj na zimné posedenie vonku — majú tu ohrievače a prestrešený dvorček vzadu.");
         await LinkKat(blueMondays, "Kaviarne");
         await LinkFil(blueMondays, "Kaviarne", "Speciality coffee", "Vegan options", "Terasa", "Terasa nefajčiarska", "Platba kartou", "Koláče", "Raňajky", "Matcha");
 
@@ -363,11 +363,11 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await LinkKat(baryk, "Kaviarne");
         await LinkFil(baryk, "Kaviarne", "Speciality coffee", "Vegan options", "Terasa", "Platba kartou", "Koláče", "Raňajky");
 
-        var vtakKaviaren = await AddMiesto("Kaviareň Vták", "Račianska, Bratislava", 48.14903887, 17.11716915);
+        var vtakKaviaren = await AddMiesto("Kaviareň Vták", "Račianska, Bratislava", 48.14903887, 17.11716915, "Niekto hovorí, že tu majú najlepší batch v meste. V malom repráčiku hráva jazz či David Bowie. Skočte sem na Vôňu koní alebo Krabovu pomstu (ich kávičky) a nebudete sklamaní. Highlight je aj full vegánska ponuka šmakocín. Vyhrali European Coffee Awards — Refresher dáva 10/10!");
         await LinkKat(vtakKaviaren, "Kaviarne");
         await LinkFil(vtakKaviaren, "Kaviarne", "Speciality coffee", "Vegan options", "Terasa", "Terasa nefajčiarska", "Platba kartou", "Pet friendly");
 
-        var temnyOstBlock = await AddMiesto("Temný Ost Block", "Špitálska, Bratislava", 48.14538041, 17.11474368);
+        var temnyOstBlock = await AddMiesto("Temný Ost Block", "Špitálska, Bratislava", 48.14538041, 17.11474368, "Si mileniál/ka, alebo sa tak cítiš? Tak potom je všetko v pohode — OST je topka.");
         await LinkKat(temnyOstBlock, "Kaviarne");
         await LinkFil(temnyOstBlock, "Kaviarne", "Speciality coffee", "Vegan options", "Terasa", "Platba kartou");
 
@@ -383,7 +383,7 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await LinkKat(mandla, "Kaviarne");
         await LinkFil(mandla, "Kaviarne", "Speciality coffee", "Vegan options", "Platba kartou", "Koláče");
 
-        var giraffeB = await AddMiesto("Giraffe Bakery", "Župné námestie, Bratislava", 48.18342437, 17.13213319);
+        var giraffeB = await AddMiesto("Giraffe Bakery", "Župné námestie, Bratislava", 48.18342437, 17.13213319, "Stará dobrá žirafa má v ponuke legendárne zákusky: punčák s najlepšou ružovou polevou v Bratislave alebo sladká bomba cinabon. Sú neoddeliteľnou súčasťou Novej Cvernovky — ak sa tu vyskytnete ráno, obdarujte sa niečím sladkým a neoľutujete.");
         await LinkKat(giraffeB, "Kaviarne");
         await LinkKat(giraffeB, "Jedlo", false);
         await LinkFil(giraffeB, "Kaviarne", "Speciality coffee", "Vegan options", "Terasa", "Terasa nefajčiarska", "Platba kartou");
@@ -398,7 +398,7 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await LinkKat(ramenKazu, "Jedlo");
         await LinkFil(ramenKazu, "Jedlo", "Vegan options", "Terasa", "Platba kartou", "Reštaurácia/Bistro", "A la carte");
 
-        var studna = await AddMiesto("Studňa", "Šafárikovo nám., Bratislava", 48.14325919, 17.10605714);
+        var studna = await AddMiesto("Studňa", "Šafárikovo nám., Bratislava", 48.14325919, 17.10605714, "Komunitné miesto s parádnym pivkom, fajčiarskou a výnimočnou atmosférou. Vo výpise z účtu sa píše Umelecký klub Studňa — aby tatko nechápal. Zaži piatkový plný obrubník na Prepoštskej!");
         await LinkKat(studna, "Jedlo");
         await LinkKat(studna, "Drinks", false);
         await LinkFil(studna, "Jedlo", "Vegan options", "Terasa", "Bezbariérový prístup", "Platba kartou", "Reštaurácia/Bistro", "A la carte");
@@ -408,7 +408,7 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await LinkKat(palacinka, "Jedlo");
         await LinkFil(palacinka, "Jedlo", "Speciality coffee", "Terasa", "Platba kartou", "Reštaurácia/Bistro", "Food truck", "Denné menu", "A la carte", "Raňajky");
 
-        var bistroHaj = await AddMiesto("Bistro Háj", "Háj, Bratislava", 48.16241505, 17.12390625);
+        var bistroHaj = await AddMiesto("Bistro Háj", "Háj, Bratislava", 48.16241505, 17.12390625, "Bistro Háj má pražský charakter — na peknej časti Račianskej ulice je to skvele zapadajúci podnik. Odporúčame tu aj papať, obsluha je veľmi ústretová a príjemná. Ale nepomíľte si — nie je Háj ako Háj (ten v Petržalke).");
         await LinkKat(bistroHaj, "Jedlo");
         await LinkKat(bistroHaj, "Kaviarne", false);
         await LinkFil(bistroHaj, "Jedlo", "Speciality coffee", "Vegan options", "Terasa", "Bezbariérový prístup", "Platba kartou", "Pet friendly", "Pekáreň", "Reštaurácia/Bistro", "Denné menu", "Raňajky");
@@ -434,7 +434,7 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await LinkKat(fuga, "Hudba");
         await LinkFil(fuga, "Hudba", "Koncertná hala", "Vstup kartou", "Elektronika", "DnB", "Acoustic", "Gitarová hudba");
 
-        var kcNovaCvernovka = await AddMiesto("KC Nová Cvernovka", "Račianska, Bratislava", 48.18305933, 17.13178615);
+        var kcNovaCvernovka = await AddMiesto("KC Nová Cvernovka", "Račianska, Bratislava", 48.18305933, 17.13178615, "Najkomfortnejší kultúrny venue? Ventilácia, klímoška, fajný bar, veľa miesta a dobrá dramaturgia — to je Nová Cvernovka.");
         await LinkKat(kcNovaCvernovka, "Hudba");
         await LinkKat(kcNovaCvernovka, "Kultúra", false);
         await LinkKat(kcNovaCvernovka, "Outdoor", false);
@@ -458,7 +458,7 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await LinkFil(a4, "Kultúra", "Eventový space", "Diskusie");
         await LinkFil(a4, "Drinks", "Čapované pivo", "Víno", "Miešané drinky", "Terasa", "Late night", "Platba kartou");
 
-        var kacecko = await AddMiesto("Kácéčko", "Kollárovo nám., Bratislava", 48.14519666, 17.11498054);
+        var kacecko = await AddMiesto("Kácéčko", "Kollárovo nám., Bratislava", 48.14519666, 17.11498054, "Máš na starosti 30 erazmákov? Sem sa zmestíte. KC je bratislavskou kultúrnou stálicou s dobrou terasou. Ďalší skvelý faktor: kácéčko spája — môžeš tu stretnúť naozaj každého/ú.");
         await LinkKat(kacecko, "Hudba");
         await LinkKat(kacecko, "Drinks", false);
         await LinkFil(kacecko, "Hudba", "Koncertná hala", "Vstup kartou", "Elektronika", "DnB", "Acoustic", "Gitarová hudba", "Jazz");
@@ -508,7 +508,7 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await LinkFil(skateparkGercenova, "Šport", "Skate / inline", "Free");
         await LinkFil(skateparkGercenova, "Outdoor", "Skatespot");
 
-        var mudronka = await AddMiesto("Mudronka", "Horský park, Bratislava", 48.1581, 17.0892);
+        var mudronka = await AddMiesto("Mudronka", "Horský park, Bratislava", 48.1581, 17.0892, "Ihriško je zadarmo, ale nečakaj, že ti zapne školník svetlá (ani za peniaze). Koná sa tu UCOF — vtedy to tu stojí za to.");
         await LinkKat(mudronka, "Šport");
         await LinkFil(mudronka, "Šport", "Svetlá", "Futbal", "Tenis", "Bežecká dráha", "Free");
 
@@ -531,7 +531,7 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await LinkKat(thePeach, "Drinks");
         await LinkFil(thePeach, "Drinks", "Čapované pivo", "Víno", "Miešané drinky", "Fajčiarske dnu", "Terasa", "Late night");
 
-        var cafeAxioma = await AddMiesto("Café Axioma", "Partizánska, Bratislava", 48.14746034, 17.11753096);
+        var cafeAxioma = await AddMiesto("Café Axioma", "Partizánska, Bratislava", 48.14746034, 17.11753096, "Tie najlepšie krčmy sú tie, ktoré majú v názve café, bistro alebo U — a Axi je toho skvelým dôkazom. Môžeš tu pracovať, čítať, kamošiť sa alebo chliapať borovice jak šialený/á.");
         await LinkKat(cafeAxioma, "Drinks");
         await LinkKat(cafeAxioma, "Kaviarne", false);
         await LinkFil(cafeAxioma, "Drinks", "Čapované pivo", "Víno", "Miešané drinky", "Fajčiarske dnu", "Terasa", "Late night");
@@ -572,7 +572,7 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await LinkFil(partizanskaLuka, "Outdoor", "Romantické miesta", "Opekanie", "Vyhliadkové miesta", "Park", "Les / lesopark");
         await LinkFil(partizanskaLuka, "Šport", "Ping pong", "Free");
 
-        var lido = await AddMiesto("Lido / Elýzium", "Tyršovo nábrežie, Bratislava", 48.1304, 17.0888);
+        var lido = await AddMiesto("Lido / Elýzium", "Tyršovo nábrežie, Bratislava", 48.1304, 17.0888, "Poď sem kým to tu developeri nezničia.");
         await LinkKat(lido, "Outdoor");
         await LinkFil(lido, "Outdoor", "Romantické miesta", "Opekanie", "Park", "Les / lesopark", "Kúpanie");
 
@@ -589,23 +589,23 @@ public class DatabaseInitializer(DbConnectionFactory factory, IKategoriaReposito
         await LinkFil(devinskaKobyla, "Outdoor", "Romantické miesta", "Opekanie", "Les / lesopark");
 
         // ── Fashion ──────────────────────────────────────────────────────────────
-        var textileParickova = await AddMiesto("Textile House Páričkova", "Páričkova, Bratislava", 48.14800158, 17.12735804);
+        var textileParickova = await AddMiesto("Textile House Páričkova", "Páričkova, Bratislava", 48.14800158, 17.12735804, "Keď nie sú love na veľké značky, vždy je tu sekáč. Pohrab sa tu a isto nájdeš niečo čo ti padne do oka — a to za pár šupov!");
         await LinkKat(textileParickova, "Fashion");
         await LinkFil(textileParickova, "Fashion", "Second hand");
 
-        var vintageFrantiskanske = await AddMiesto("Vintage shop Františkánske", "Františkánske nám., Bratislava", 48.14410007, 17.10794299);
+        var vintageFrantiskanske = await AddMiesto("Vintage shop Františkánske", "Františkánske nám., Bratislava", 48.14410007, 17.10794299, "Chceš sekáč, ale si fancy? Vintage shop je povinná jazda — nejeden šťastlivec tu našiel Burberry alebo Carhartt. Pri vintidži nie je o čom, daj si vintage aspoň raz týždenne.");
         await LinkKat(vintageFrantiskanske, "Fashion");
         await LinkFil(vintageFrantiskanske, "Fashion", "Second hand");
 
-        var buffetClothing = await AddMiesto("Buffet Clothing", "Obchodná, Bratislava", 48.14421481, 17.11198868);
+        var buffetClothing = await AddMiesto("Buffet Clothing", "Obchodná, Bratislava", 48.14421481, 17.11198868, "Buffet nie je obyčajná langošáreň — vlastne ňou nie je vôbec. Majú tu ultrakvalitné na Slovensku navrhnuté oblečko v minimalistickom štýle. Načo ti je Prada či COS, keď je tu Buffet?");
         await LinkKat(buffetClothing, "Fashion");
         await LinkFil(buffetClothing, "Fashion", "Nové");
 
-        var slavicaStore = await AddMiesto("Slávica local design", "Obchodná, Bratislava", 48.14423296, 17.11204012);
+        var slavicaStore = await AddMiesto("Slávica local design", "Obchodná, Bratislava", 48.14423296, 17.11204012, "Slovenský a český dizajn koncentrovaný na jednom mieste. Šperky, vázy, parfémy a také veci — vrchol estetiky. Ožeľte Gucciho či Pandoru a podporte lokálny dizajn!");
         await LinkKat(slavicaStore, "Fashion");
         await LinkFil(slavicaStore, "Fashion", "Nové");
 
-        var genesis = await AddMiesto("Genesis Nedbalova", "Nedbalova, Bratislava", 48.14479134, 17.11069578);
+        var genesis = await AddMiesto("Genesis Nedbalova", "Nedbalova, Bratislava", 48.14479134, 17.11069578, "Večný battle: ružový sekáč či obyčajný? V ružových Genesis sa cítiš viac thrifty a väčší stokár/ka — ale to mu neuberá na kvalite. Poď sa sem pohrabať a nebudeš smutný/á.");
         await LinkKat(genesis, "Fashion");
         await LinkFil(genesis, "Fashion", "Second hand");
 
